@@ -75,3 +75,11 @@ export type Itineary = {
     waitingTime: number;
     legs: Leg[];
 };
+
+export type SearchItem = {
+    latitude: number;
+    longitude: number;
+    name: string;
+    address: string;
+    boundingBox: number[];
+};

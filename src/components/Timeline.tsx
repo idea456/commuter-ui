@@ -1,5 +1,5 @@
-import { Bus, ChevronDown, Footprints, Route, Train } from "lucide-react";
 import { Itineary } from "@/types";
+import { Badge } from "./ui/badge";
 
 type TimelineProps = {
     directions: Itineary;
@@ -12,50 +12,65 @@ function fromOriginLabel(toStation: string) {
 export const Timeline = ({ directions }: TimelineProps) => {
     return (
         <div className="w-full">
-            <div className="flex justify-between hover:underline underline-offset-2 cursor-pointer">
-                <div className="flex items-center gap-2 pb-4">
-                    <Route size={20} />
-                    <h3 className="text-md font-medium">Fastest route</h3>
-                </div>
-                <ChevronDown size={20} />
-            </div>
-
             <div>
-                {directions.legs.map((leg) => (
-                    <div className="border-neutral-200 flex gap-3 ml-2 pl-5 py-2">
-                        {leg.mode === "WALK" && (
-                            <Footprints
-                                size={20}
-                                className="flex-shrink-0 mt-[0.3rem]"
-                            />
-                        )}
-                        {leg.mode === "SUBWAY" && (
-                            <Train
-                                size={20}
-                                className="flex-shrink-0 mt-[0.3rem]"
-                            />
-                        )}
-                        {leg.mode === "BUS" && (
-                            <Bus
-                                size={20}
-                                className="flex-shrink-0 mt-[0.3rem]"
-                            />
-                        )}
-                        <div>
+                {directions.legs.map((leg, i) => (
+                    <div className="border-neutral-200 flex gap-3 p-2 hover:bg-neutral-100 rounded-lg cursor-pointer">
+                        <div className="flex flex-col items-center">
                             {leg.mode === "WALK" && (
-                                <p>
-                                    Walk for about{" "}
-                                    {Math.round(leg.duration / 60)} minutes in{" "}
-                                    {(leg.distance / 1000).toFixed(2)} km to{" "}
-                                    {leg.to.name}
-                                </p>
+                                <span className="text-lg">🚶‍♂️</span>
+                            )}
+                            {leg.mode === "TRAM" && (
+                                <span className="text-lg">🚃</span>
                             )}
                             {leg.mode === "SUBWAY" && (
-                                <p>
-                                    From {leg.from.name} station, take the{" "}
-                                    {leg.route.longName} to {leg.to.name}{" "}
-                                    station
-                                </p>
+                                <span className="text-lg">🚇</span>
+                            )}
+                            {leg.mode === "BUS" && (
+                                <span className="text-lg">🚌</span>
+                            )}
+                            {i < directions.legs.length - 1 && (
+                                <div className="border h-full w-[1px] mt-2 border-neutral-200 rounded-lg" />
+                            )}
+                        </div>
+                        <div>
+                            {leg.mode === "WALK" && (
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex justify-between">
+                                        <span className="font-bold">
+                                            {leg.mode}
+                                        </span>
+                                        <Badge variant="outline">
+                                            {Math.round(leg.duration / 60)}{" "}
+                                            minutes
+                                        </Badge>
+                                    </div>
+                                    <p>
+                                        Walk for about for{" "}
+                                        {leg.distance >= 1000
+                                            ? (leg.distance / 1000).toFixed(2)
+                                            : Math.floor(leg.distance)}{" "}
+                                        {leg.distance < 1000 ? "metres" : "km"}{" "}
+                                        to {leg.to.name}
+                                    </p>
+                                </div>
+                            )}
+                            {(leg.mode === "SUBWAY" || leg.mode === "TRAM") && (
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex justify-between">
+                                        <span className="font-bold">
+                                            {leg.mode}
+                                        </span>
+                                        <Badge variant="outline">
+                                            {Math.round(leg.duration / 60)}{" "}
+                                            minutes
+                                        </Badge>
+                                    </div>
+                                    <p>
+                                        From <b>{leg.from.name} station</b>,
+                                        take the {leg.route.longName} to{" "}
+                                        {leg.to.name} station
+                                    </p>
+                                </div>
                             )}
                             {leg.mode === "BUS" && (
                                 <p>

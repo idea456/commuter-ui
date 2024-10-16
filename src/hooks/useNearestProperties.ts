@@ -6,17 +6,11 @@ import { useMemo } from "react";
 
 const fetchNearestProperties = async (
     origin?: Coordinate,
-    filter?: SearchValues
+    walkDistance: number = 2000,
+    minStops: number = 2
 ) => {
-    console.log("the filters", filter);
-    const results = await axios.post(
-        "http://localhost:4001/properties/nearest/transit",
-        {
-            origin,
-            min_price: filter?.minPrice,
-            max_price: filter?.maxPrice,
-            radius: 3,
-        }
+    const results = await axios.get(
+        `http://localhost:4001/properties/nearest/transit?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}&min_stops=${minStops}`
     );
 
     return results.data;
@@ -31,7 +25,7 @@ const useNearestProperties = (origin?: Coordinate, filter?: SearchValues) => {
             filter?.minPrice,
             filter?.maxPrice,
         ],
-        queryFn: async () => await fetchNearestProperties(origin, filter),
+        queryFn: async () => await fetchNearestProperties(origin, 2000, 5),
         enabled: origin !== undefined,
     });
 

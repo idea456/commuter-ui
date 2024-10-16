@@ -36,11 +36,13 @@ const PropertyCard = ({ onClick, property, className }: PropertyCardProps) => {
             </div>
             <div
                 className="grid grid-flow-row grid-cols-2 mt-5"
-                style={{
-                    columnGap: "5%",
-                }}
+                style={
+                    {
+                        // columnGap: "1%",
+                    }
+                }
             >
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                     <h3 className="text-sm text-muted-foreground">
                         Rental range
                     </h3>
@@ -48,7 +50,7 @@ const PropertyCard = ({ onClick, property, className }: PropertyCardProps) => {
                         {toRinggit(property.rentalRange.fromPrice)} ~{" "}
                         {toRinggit(property.rentalRange.toPrice)}
                     </h3>
-                </div>
+                </div> */}
 
                 <div className="flex flex-col gap-2">
                     <h3 className="text-sm text-muted-foreground">
@@ -57,7 +59,7 @@ const PropertyCard = ({ onClick, property, className }: PropertyCardProps) => {
                     <h3 className="text-xl font-medium">1.4 kilometres</h3>
                 </div>
 
-                <div className="flex flex-col gap-2 mt-4">
+                <div className="flex flex-col gap-2">
                     <h3 className="text-sm text-muted-foreground">
                         Commute time
                     </h3>

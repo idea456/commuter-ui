@@ -16,18 +16,14 @@ import {
     CardTitle,
     CardDescription,
     CardContent,
-    CardFooter,
 } from "./ui/card";
-import { ChevronDown, Heart, Route } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Separator } from "./ui/separator";
-import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Timeline } from "./Timeline";
@@ -89,13 +85,10 @@ const DirectionsGeometry = ({ direction }: { direction: Itineary }) => {
                         "line-width": 10,
                         "line-color":
                             leg.mode === "WALK"
-                                ? "#e5e5e5"
+                                ? "#B7B7B7"
                                 : `#${leg?.route.color}`,
                         "line-border-color": "black",
                         "line-border-width": 2,
-                        ...(leg.mode === "WALK" && {
-                            "line-dasharray": [1, 1.5],
-                        }),
                     }}
                     layout={{
                         "line-cap":
@@ -117,29 +110,31 @@ const PropertyPin = ({ isSelected, property, onClick }: PropertyPinProps) => {
     if (isSelected) {
         return (
             <div
-                className="bg-yellow-400 p-2 rounded-3xl font-semibold border-black border-2"
+                className="bg-yellow-400 p-2 rounded-3xl font-semibold border-black border-2 text-ellipsis overflow-hidden"
                 onClick={onClick}
             >
-                RM 3,000 ~ RM 5,000
+                {/* RM 3,000 ~ RM 5,000 */}
+                {property.name}
             </div>
         );
     }
     return (
         <div
-            className="bg-white p-2 hover:bg-yellow-400 rounded-3xl font-semibold border-black border-2 opacity-50 hover:opacity-100"
+            className="bg-white p-2 hover:bg-yellow-400 rounded-3xl font-semibold border-black border-2 opacity-70 hover:opacity-100"
             onClick={onClick}
         >
-            RM 1,000 ~ RM 2,000
+            {property.name}
         </div>
     );
 };
 
-const CommuterMap = ({ origin, properties, directions }: CommuterMapProps) => {
+const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
     const mapRef = useRef<mapboxgl.Map>();
     const selectedProperty = useRootStore((state) => state.selectedProperty);
     const setSelectedProperty = useRootStore(
         (state) => state.setSelectedProperty
     );
+    const origin = useRootStore((state) => state.origin);
     const setDestination = useRootStore((state) => state.setDestination);
 
     const onClickPropertyPin = (clickedProperty: Property) => {
@@ -200,26 +195,28 @@ const CommuterMap = ({ origin, properties, directions }: CommuterMapProps) => {
             directionsGeometry &&
             mapRef.current
         ) {
-            // const destinationCoordinates = directionsGeometry.coordinates;
+            const destinationCoordinates = directionsGeometry.coordinates;
             const bounds = new mapboxgl.LngLatBounds(
                 [origin.longitude, origin.latitude],
                 [origin.longitude, origin.latitude]
             );
 
-            // for (const coord of destinationCoordinates) {
-            //     bounds.extend(coord);
-            // }
+            for (const coord of destinationCoordinates) {
+                bounds.extend(coord);
+            }
 
             bounds.extend([
                 selectedProperty.coordinates.longitude,
                 selectedProperty.coordinates.latitude,
             ]);
+            // let zoomFactor = 15;
+            // const isInView = mapRef.current.getBounds()?.contains(origin)
 
             mapRef.current.fitBounds(bounds, {
                 bearing: 40,
                 pitch: 40,
                 maxZoom: 17,
-                zoom: 16,
+                zoom: 15,
             });
         }
     }, [origin, selectedProperty, directionsGeometry]);

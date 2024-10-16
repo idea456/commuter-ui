@@ -12,7 +12,7 @@ const fetchDirections = async (
         destination,
         options: {
             walk_reluctance: 10,
-            transport_modes: ["SUBWAY"],
+            transport_modes: ["SUBWAY", "TRAM"],
         },
     });
 

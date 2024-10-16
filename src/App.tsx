@@ -22,8 +22,8 @@ const trx: Coordinate = {
 };
 
 function App() {
-    const [origin, setOrigin] = useState<Coordinate>();
     const [filter, setFilter] = useState<SearchValues>(null);
+    const origin = useRootStore((state) => state.origin);
 
     const destination = useRootStore((state) => state.destination);
 
