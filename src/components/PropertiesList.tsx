@@ -13,7 +13,7 @@ const PropertiesList = ({
 }: PropertiesListProps) => {
     const selectedProperty = useRootStore((state) => state.selectedProperty);
     return (
-        <ScrollArea className="h-[78vh] no-scrollbar mt-4">
+        <ScrollArea className="no-scrollbar mt-4">
             {properties.map((item) => (
                 <PropertyCard
                     className={

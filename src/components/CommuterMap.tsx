@@ -1,5 +1,6 @@
-import { Coordinate, Itineary, Property } from "@/types";
-import Map, { Layer, Marker, Popup, Source } from "react-map-gl";
+import { useState } from "react";
+import { Coordinate, Itineary, NearestProperty, Property } from "@/types";
+import Map, { Layer, Marker, Source } from "react-map-gl";
 import {
     TooltipProvider,
     TooltipTrigger,
@@ -10,27 +11,12 @@ import { useEffect, useMemo, useRef } from "react";
 import polyline from "@mapbox/polyline";
 import mapboxgl from "mapbox-gl";
 import { useRootStore } from "@/hooks/stores";
-import {
-    Card,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-    CardContent,
-} from "./ui/card";
-import { Heart } from "lucide-react";
-import { Separator } from "./ui/separator";
-import { Button } from "./ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Timeline } from "./Timeline";
+import { cn } from "@/lib/utils";
+import { Summary } from "./Summary";
 
 type CommuterMapProps = {
-    origin?: Coordinate;
-    properties?: Property[];
+    origin: Coordinate | null;
+    properties?: NearestProperty[];
     directions?: Itineary[];
 };
 
@@ -60,31 +46,29 @@ const OriginPin = () => {
 type PropertyPinProps = {
     isSelected?: boolean;
     property: Property;
+    score: number;
+    onClick: () => void;
 };
 
-const DirectionsGeometry = ({ direction }: { direction: Itineary }) => {
+const DirectionsGeometry = ({
+    direction,
+    hoveredDirectionIndex,
+}: {
+    direction: Itineary;
+    hoveredDirectionIndex: number;
+}) => {
     return direction.legs.map((leg, i) => {
         const geojson = polyline.toGeoJSON(leg.legGeometry.points);
-        console.log("geometry", geojson);
         return (
             <Source type="geojson" data={geojson}>
-                <Marker
-                    latitude={
-                        geojson?.coordinates[geojson?.coordinates.length - 1][1]
-                    }
-                    longitude={
-                        geojson?.coordinates[geojson?.coordinates.length - 1][0]
-                    }
-                    offset={[0, -20]}
-                >
-                    <OriginPin />
-                </Marker>
                 <Layer
                     type="line"
                     paint={{
                         "line-width": 10,
                         "line-color":
-                            leg.mode === "WALK"
+                            hoveredDirectionIndex === i
+                                ? "yellow"
+                                : leg.mode === "WALK"
                                 ? "#B7B7B7"
                                 : `#${leg?.route.color}`,
                         "line-border-color": "black",
@@ -106,24 +90,37 @@ const DirectionsGeometry = ({ direction }: { direction: Itineary }) => {
     });
 };
 
-const PropertyPin = ({ isSelected, property, onClick }: PropertyPinProps) => {
+const PropertyPin = ({
+    isSelected,
+    property,
+    onClick,
+    score,
+}: PropertyPinProps) => {
     if (isSelected) {
         return (
             <div
                 className="bg-yellow-400 p-2 rounded-3xl font-semibold border-black border-2 text-ellipsis overflow-hidden"
                 onClick={onClick}
             >
-                {/* RM 3,000 ~ RM 5,000 */}
                 {property.name}
             </div>
         );
     }
+    const customScore = (score / 9999) * 100;
+
     return (
         <div
-            className="bg-white p-2 hover:bg-yellow-400 rounded-3xl font-semibold border-black border-2 opacity-70 hover:opacity-100"
+            className={cn(
+                " p-2 hover:bg-yellow-400 rounded-3xl font-semibold border-black border-2 hover:opacity-100",
+                {
+                    "bg-lime-500": customScore <= 20,
+                    "bg-orange-400": customScore > 20,
+                    "bg-red-500": customScore >= 30,
+                }
+            )}
             onClick={onClick}
         >
-            {property.name}
+            {/* {property.name} */}
         </div>
     );
 };
@@ -142,6 +139,15 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
         setSelectedProperty(clickedProperty);
     };
 
+    console.log(directions);
+
+    const [hoveredDirectionIndex, setHoveredDirectionIndex] = useState<
+        number | null
+    >(null);
+    const [selectedDirection, setSelectedDirection] = useState<number | null>(
+        null
+    );
+
     useEffect(() => {
         if (
             origin?.latitude &&
@@ -156,8 +162,8 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
 
             for (const property of properties) {
                 bounds.extend([
-                    property.coordinates.longitude,
-                    property.coordinates.latitude,
+                    property.property.coordinates.longitude,
+                    property.property.coordinates.latitude,
                 ]);
             }
 
@@ -168,8 +174,25 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
         }
     }, [origin, properties]);
 
+    useEffect(() => {
+        if (directions?.length && selectedDirection && mapRef?.current) {
+            const geojson = polyline.toGeoJSON(
+                directions[0]?.legs[selectedDirection].legGeometry.points
+            );
+            // @ts-expect-error coordinates already satisfies [number, number] type
+            const bounds = new mapboxgl.LngLatBounds(geojson.coordinates);
+
+            mapRef?.current.fitBounds(bounds, {
+                padding: 50,
+                maxZoom: 20,
+                bearing: 40,
+                pitch: 40,
+                zoom: 15,
+            });
+        }
+    }, [directions, selectedDirection]);
+
     const directionsGeometry = useMemo(() => {
-        console.log("directions", directions);
         if (directions && directions.length > 0 && directions[0].legs?.length) {
             const geojson = polyline.toGeoJSON(
                 directions[0].legs[0].legGeometry.points
@@ -209,8 +232,6 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
                 selectedProperty.coordinates.longitude,
                 selectedProperty.coordinates.latitude,
             ]);
-            // let zoomFactor = 15;
-            // const isInView = mapRef.current.getBounds()?.contains(origin)
 
             mapRef.current.fitBounds(bounds, {
                 bearing: 40,
@@ -222,87 +243,12 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
     }, [origin, selectedProperty, directionsGeometry]);
 
     return (
-        <div
-            className="w-full py-4 pr-4 pl-0 relative"
-            style={{
-                height: "calc(100vh - 5px)",
-            }}
-        >
-            {selectedProperty && (
-                <Card className="max-w-[350px] min-w-[350px] absolute z-10 top-8 right-8 border-none">
-                    <CardHeader className="relative">
-                        <Heart
-                            className="absolute top-8 right-8 cursor-pointer"
-                            size={22}
-                        />
-                        <CardTitle>{selectedProperty.name}</CardTitle>
-                        <CardDescription>
-                            {selectedProperty.address}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex gap-3 flex-col">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger>
-                                <Button className="w-full" variant="default">
-                                    Search listings at...
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="min-w-[300px]">
-                                <DropdownMenuItem
-                                    className="w-full"
-                                    onClick={() =>
-                                        window.open(
-                                            `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${selectedProperty.name.replace(
-                                                " ",
-                                                "+"
-                                            )}`
-                                        )
-                                    }
-                                >
-                                    PropertyGuru
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        window.open(
-                                            `https://www.iproperty.com.my/rent/kuala-lumpur/all-residential/?place=Kuala+Lumpur&maxPrice=${2300}&q=${
-                                                selectedProperty.name.split(
-                                                    " "
-                                                )[0]
-                                            }`
-                                        )
-                                    }
-                                >
-                                    iProperty
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        window.open(
-                                            `https://speedhome.com/rent/${selectedProperty.name
-                                                .split(" ")
-                                                .map((name) =>
-                                                    name.toLowerCase()
-                                                )
-                                                .join(
-                                                    "-"
-                                                )}?q=${selectedProperty.name.replace(
-                                                " ",
-                                                "+"
-                                            )}&min=${0}&max=${2300}`
-                                        )
-                                    }
-                                >
-                                    SpeedHome
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <Separator />
-                        {directions?.length && (
-                            <Timeline directions={directions[0]} />
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+        <div className="w-screen h-screen relative">
+            <Summary
+                directions={directions}
+                setHoveredDirectionIndex={setHoveredDirectionIndex}
+                setSelectedDirection={setSelectedDirection}
+            />
             <TooltipProvider>
                 <Map
                     ref={mapRef}
@@ -343,29 +289,6 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
                             "fill-extrusion-opacity": 0.6,
                         }}
                     />
-                    {/* <Layer
-                        id="3d-buildings"
-                        source="composite"
-                        source-layer="building"
-                        // layerOptions={{
-                        //     "source-layer": "building",
-                        //     filter: ["==", "extrude", "true"],
-                        //     type: "fill-extrusion",
-                        //     minzoom: 15,
-                        // }}
-                        paint={{
-                            "fill-extrusion-color": "#aaa",
-                            "fill-extrusion-height": {
-                                type: "identity",
-                                property: "height",
-                            },
-                            "fill-extrusion-base": {
-                                type: "identity",
-                                property: "min_height",
-                            },
-                            "fill-extrusion-opacity": 0.6,
-                        }}
-                    /> */}
                     {origin && (
                         <Marker
                             latitude={origin.latitude}
@@ -378,28 +301,37 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
                     {properties?.map((property) => (
                         <Marker
                             offset={[0, -25]}
-                            key={property.id}
-                            latitude={property.coordinates.latitude}
-                            longitude={property.coordinates.longitude}
+                            key={property.property.id}
+                            latitude={property.property.coordinates.latitude}
+                            longitude={property.property.coordinates.longitude}
                         >
                             <Tooltip>
                                 <TooltipTrigger>
                                     <PropertyPin
-                                        property={property}
+                                        score={property.score}
+                                        property={property.property}
                                         isSelected={
-                                            property.id === selectedProperty?.id
+                                            property.property.id ===
+                                            selectedProperty?.id
                                         }
                                         onClick={() =>
-                                            onClickPropertyPin(property)
+                                            onClickPropertyPin(
+                                                property.property
+                                            )
                                         }
                                     />
                                 </TooltipTrigger>
-                                <TooltipContent>{property.name}</TooltipContent>
+                                <TooltipContent>
+                                    {property.property.name}
+                                </TooltipContent>
                             </Tooltip>
                         </Marker>
                     ))}
                     {directions?.length && (
-                        <DirectionsGeometry direction={directions[0]} />
+                        <DirectionsGeometry
+                            direction={directions[0]}
+                            hoveredDirectionIndex={hoveredDirectionIndex}
+                        />
                     )}
                 </Map>
             </TooltipProvider>

@@ -13,15 +13,16 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from "./ui/label";
 import { SearchItem } from "@/types";
+import { useDevice } from "@/hooks/useDevice";
 
 export type Option = Record<"value" | "label", string> &
     Record<string, string> &
     SearchItem;
 
 type AutoCompleteProps = {
-    options: Option[];
+    options: (Option & SearchItem)[];
     emptyMessage: string;
-    value?: Option;
+    value?: Option & SearchItem;
     onValueChange?: (value: Option) => void;
     onInputChange: (value: string) => void;
     isLoading?: boolean;
@@ -40,7 +41,7 @@ export const AutoComplete = ({
     isLoading = false,
 }: AutoCompleteProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
-
+    const { isMobile } = useDevice();
     const [isOpen, setOpen] = useState(false);
     const [selected, setSelected] = useState<Option>(value as Option);
     const [inputValue, setInputValue] = useState<string>(value?.label || "");
@@ -53,7 +54,7 @@ export const AutoComplete = ({
             }
 
             // Keep the options displayed when the user is typing
-            if (!isOpen) {
+            if (!isOpen && options.length) {
                 setOpen(true);
             }
 
@@ -105,10 +106,14 @@ export const AutoComplete = ({
                     onValueChange={isLoading ? undefined : setInputValue}
                     onInput={(e) => onInputChange(e.target?.value || "")}
                     onBlur={handleBlur}
-                    onFocus={() => setOpen(true)}
+                    onFocus={() => {
+                        if (inputValue.length) setOpen(true);
+                    }}
                     placeholder={placeholder}
                     disabled={disabled}
-                    className="text-base"
+                    className={cn("text-base", {
+                        "border-none": isMobile,
+                    })}
                 />
             </div>
             <div className="relative mt-1">

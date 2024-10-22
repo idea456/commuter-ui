@@ -10,6 +10,8 @@ import SearchForm, { SearchValues } from "./components/SearchForm";
 import useDirections from "./hooks/useDirections";
 import { useRootStore } from "./hooks/stores";
 import { Label } from "./components/ui/label";
+import { CircleDollarSign, LandPlot } from "lucide-react";
+import Search from "./components/Search";
 
 const klcc: Coordinate = {
     latitude: 3.15833674645895,
@@ -54,19 +56,9 @@ function App() {
     };
 
     return (
-        <div
-            className="grid w-screen h-screen"
-            style={{
-                gridTemplateColumns: "30% 70%",
-            }}
-        >
-            <div className="p-5 gap-2 flex flex-col">
-                <SearchForm onSubmit={onSubmit} />
-                <PropertiesList
-                    properties={properties}
-                    onClickProperty={onClickProperty}
-                />
-            </div>
+        <div className="relative w-screen h-screen">
+            <Search onSubmit={onSubmit} />
+
             <CommuterMap
                 origin={origin}
                 properties={properties}

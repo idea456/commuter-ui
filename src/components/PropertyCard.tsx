@@ -1,9 +1,6 @@
 import { Property } from "@/types";
-import { Separator } from "./ui/separator";
 import { cn } from "@/lib/utils";
 import { Dot, Star } from "lucide-react";
-import { toRinggit } from "@/utils/currency";
-import { useRootStore } from "@/hooks/stores";
 
 type PropertyCardProps = {
     onClick: (clickedProperty: Property) => void;

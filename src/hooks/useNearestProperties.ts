@@ -1,23 +1,24 @@
 import { SearchValues } from "@/components/SearchForm";
-import { Coordinate, Property } from "@/types";
+import { Coordinate, NearestProperty } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useMemo } from "react";
 
 const fetchNearestProperties = async (
     origin?: Coordinate,
-    walkDistance: number = 2000,
-    minStops: number = 2
+    walkDistance: number = 500,
+    minTransfers: number = 2,
+    maxTransfers: number = 3
 ) => {
     const results = await axios.get(
-        `http://localhost:4001/properties/nearest/transit?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}&min_stops=${minStops}`
+        `http://localhost:4001/properties/nearest/transit?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}&min_transfer=${minTransfers}&max_transfer=${maxTransfers}`
     );
 
     return results.data;
 };
 
 const useNearestProperties = (origin?: Coordinate, filter?: SearchValues) => {
-    const { data, ...rest } = useQuery<Property[]>({
+    const { data, ...rest } = useQuery<NearestProperty[]>({
         queryKey: [
             "properties",
             "nearest",

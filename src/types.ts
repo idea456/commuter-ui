@@ -8,6 +8,11 @@ export type Coordinate = {
     longitude: number;
 };
 
+export type NearestProperty = {
+    property: Property;
+    score: number;
+};
+
 export type Property = {
     id: string;
     cellId: string;

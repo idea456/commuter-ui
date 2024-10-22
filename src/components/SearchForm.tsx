@@ -1,18 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-    Form,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormControl,
-} from "@/components/ui/form";
+import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -21,8 +16,16 @@ import { AutoComplete, Option } from "./autocomplete";
 import { useMemo, useState } from "react";
 import useSearch from "@/hooks/useSearch";
 import { useDebounce } from "@uidotdev/usehooks";
-import { useStore } from "zustand";
 import { useRootStore } from "@/hooks/stores";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "./ui/select";
+import { useDevice } from "@/hooks/useDevice";
 
 const formSchema = z.object({
     destination: z.string().min(0),
@@ -36,44 +39,9 @@ type SearchFormProps = {
 
 export type SearchValues = z.infer<typeof formSchema>;
 
-const FRAMEWORKS = [
-    {
-        value: "next.js",
-        label: "Next.js",
-    },
-    {
-        value: "sveltekit",
-        label: "SvelteKit",
-    },
-    {
-        value: "nuxt.js",
-        label: "Nuxt.js",
-    },
-    {
-        value: "remix",
-        label: "Remix",
-    },
-    {
-        value: "astro",
-        label: "Astro",
-    },
-    {
-        value: "wordpress",
-        label: "WordPress",
-    },
-    {
-        value: "express.js",
-        label: "Express.js",
-    },
-    {
-        value: "nest.js",
-        label: "Nest.js",
-    },
-];
-
 const SearchAutocomplete = () => {
     const [query, setQuery] = useState("");
-    const debouncedQuery = useDebounce(query, 1000);
+    const debouncedQuery = useDebounce(query, 500);
     const { items, isLoading } = useSearch(debouncedQuery);
 
     const setOrigin = useRootStore((state) => state.setOrigin);
@@ -102,12 +70,13 @@ const SearchAutocomplete = () => {
             onValueChange={setSelectedOrigin}
             isLoading={isLoading}
             value={query}
-            placeholder="Search your commuting place..."
+            placeholder="Where are you commuting to?"
         />
     );
 };
 
 const SearchForm = ({ onSubmit }: SearchFormProps) => {
+    const { isMobile } = useDevice();
     const form = useForm<SearchValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -121,12 +90,93 @@ const SearchForm = ({ onSubmit }: SearchFormProps) => {
         onSubmit(values);
     };
 
+    if (isMobile) {
+        return <SearchAutocomplete />;
+    }
+
     return (
         <Dialog>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Filter</DialogTitle>
+                    <DialogDescription>
+                        You can make changes to how we should find properties
+                        for you
+                    </DialogDescription>
                 </DialogHeader>
+                <div>
+                    <div>
+                        <h1>How do you want to commute?</h1>
+                        <div className="flex gap-2">
+                            <Select>
+                                <SelectTrigger className="flex-3">
+                                    <SelectValue placeholder="I want to commute by..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="apple">
+                                            Commute by walking
+                                        </SelectItem>
+                                        <SelectItem value="banana">
+                                            Commute by train
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Select>
+                                <SelectTrigger className="flex-2">
+                                    <SelectValue placeholder="By distance..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="apple">
+                                            within 500 metres
+                                        </SelectItem>
+                                        <SelectItem value="banana">
+                                            within 1 kilometre
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div>
+                        <h1>How many station transfers do you wish to take?</h1>
+                        <div className="flex gap-2">
+                            <Select>
+                                <SelectTrigger className="flex-3">
+                                    <SelectValue placeholder="I want to commute by..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="apple">
+                                            Commute by walking
+                                        </SelectItem>
+                                        <SelectItem value="banana">
+                                            Commute by train
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Select>
+                                <SelectTrigger className="flex-2">
+                                    <SelectValue placeholder="By distance..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="apple">
+                                            within 500 metres
+                                        </SelectItem>
+                                        <SelectItem value="banana">
+                                            within 1 kilometre
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <Button>Submit</Button>
+                </div>
             </DialogContent>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmitImpl)}>
@@ -140,41 +190,25 @@ const SearchForm = ({ onSubmit }: SearchFormProps) => {
                             name="destination"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-md">
-                                        Where are you commuting to?
-                                    </FormLabel>
                                     <FormControl>
-                                        <div className="flex">
-                                            {/* <div className="relative flex-1 flex w-full"> */}
-                                            {/* <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    {...field}
-                                                    type="search"
-                                                    placeholder="Search..."
-                                                    className="w-full rounded-lg bg-background pl-8"
-                                                /> */}
+                                        <div className="flex items-center gap-2">
                                             <SearchAutocomplete />
-                                            {/* </div> */}
-                                            {/* <DialogTrigger asChild>
+                                            <DialogTrigger asChild>
                                                 <Button variant="outline">
-                                                    <Filter className=" left-2.5 top-2.5 h-4 w-4 text-muted-foreground mr-2" />
-                                                    Filter
+                                                    <Filter className=" left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                 </Button>
-                                            </DialogTrigger> */}
+                                            </DialogTrigger>
                                         </div>
                                     </FormControl>
                                 </FormItem>
                             )}
                         />
-                        {/* <div className="flex gap-2">
-                            <Button type="submit">Walk</Button>
-                            <Button type="submit" variant="outline">
-                                Using bus
-                            </Button>
-                            <Button type="submit" variant="outline">
-                                Using train
-                            </Button>
-                        </div> */}
+                        <div
+                            className="grid mt-2 w-full"
+                            style={{
+                                gridTemplateColumns: "70% 30%",
+                            }}
+                        ></div>
                     </fieldset>
                 </form>
             </Form>
