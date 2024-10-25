@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
     CommandGroup,
     CommandItem,
@@ -44,7 +45,12 @@ export const AutoComplete = ({
     const { isMobile } = useDevice();
     const [isOpen, setOpen] = useState(false);
     const [selected, setSelected] = useState<Option>(value as Option);
+    const [isFocused, setIsFocused] = useState(false);
     const [inputValue, setInputValue] = useState<string>(value?.label || "");
+
+    useEffect(() => {
+        if (options.length && isFocused) setOpen(true);
+    }, [options, isFocused]);
 
     const handleKeyDown = useCallback(
         (event: KeyboardEvent<HTMLDivElement>) => {
@@ -78,6 +84,7 @@ export const AutoComplete = ({
 
     const handleBlur = useCallback(() => {
         setOpen(false);
+        setIsFocused(false);
         setInputValue(selected?.label);
     }, [selected]);
 
@@ -107,13 +114,15 @@ export const AutoComplete = ({
                     onInput={(e) => onInputChange(e.target?.value || "")}
                     onBlur={handleBlur}
                     onFocus={() => {
-                        if (inputValue.length) setOpen(true);
+                        setIsFocused(true);
+                        if (inputValue?.length) setOpen(true);
                     }}
                     placeholder={placeholder}
                     disabled={disabled}
                     className={cn("text-base", {
                         "border-none": isMobile,
                     })}
+                    isLoading={isLoading}
                 />
             </div>
             <div className="relative mt-1">
@@ -152,9 +161,9 @@ export const AutoComplete = ({
                                                 !isSelected ? "pl-4" : null
                                             )}
                                         >
-                                            {isSelected ? (
+                                            {/* {isSelected ? (
                                                 <Check className="w-4" />
-                                            ) : null}
+                                            ) : null} */}
                                             <div className="flex flex-col gap-1 w-full py-2">
                                                 <Label className="font-bold">
                                                     {option.name}

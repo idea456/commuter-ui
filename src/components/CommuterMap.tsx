@@ -209,7 +209,12 @@ const CommuterMap = ({ properties, directions }: CommuterMapProps) => {
             ]);
             return geojson;
         }
-    }, [directions]);
+    }, [
+        directions,
+        origin?.latitude,
+        origin?.longitude,
+        selectedProperty?.coordinates,
+    ]);
 
     useEffect(() => {
         if (

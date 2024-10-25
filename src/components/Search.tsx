@@ -10,7 +10,7 @@ const FormContainer = ({ onSubmit }: FormContainerProps) => {
 
     if (isMobile) {
         return (
-            <div className="absolute top-4 left-4 right-4 pt-1 px-1 bg-white h-fit z-50 rounded-full border-none">
+            <div className="absolute top-4 left-4 right-4 pt-1 px-1 bg-white h-fit z-50 rounded-full border border-black border-2">
                 <SearchForm onSubmit={onSubmit} />
             </div>
         );

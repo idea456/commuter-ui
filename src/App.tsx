@@ -32,32 +32,9 @@ function App() {
     const { properties } = useNearestProperties(origin, filter);
     const { directions } = useDirections(origin, destination);
 
-    const setSelectedProperty = useRootStore(
-        (state) => state.setSelectedProperty
-    );
-    const setDestination = useRootStore((state) => state.setDestination);
-
-    const onClickProperty = (property: Property) => {
-        setDestination(property.coordinates);
-        setSelectedProperty(property);
-    };
-
-    const onSubmit = (values: SearchValues) => {
-        console.log("SUBMITTING WITH VALUES", values.minPrice);
-        if (origin) {
-            setOrigin(origin?.latitude === klcc?.latitude ? trx : klcc);
-            setDestination(null);
-            setSelectedProperty(null);
-            console.log(values);
-        } else {
-            setOrigin(klcc);
-        }
-        setFilter(values);
-    };
-
     return (
         <div className="relative w-screen h-screen">
-            <Search onSubmit={onSubmit} />
+            <Search />
 
             <CommuterMap
                 origin={origin}

@@ -42,19 +42,16 @@ export type SearchValues = z.infer<typeof formSchema>;
 const SearchAutocomplete = () => {
     const [query, setQuery] = useState("");
     const debouncedQuery = useDebounce(query, 500);
-    const { items, isLoading } = useSearch(debouncedQuery);
+    const { items, isLoading, isFetching } = useSearch(debouncedQuery);
 
     const setOrigin = useRootStore((state) => state.setOrigin);
 
-    const options = useMemo(
-        () =>
-            items.map((item) => ({
-                value: item.name,
-                label: item.name,
-                ...item,
-            })),
-        [items]
-    );
+    const options = items.map((item) => ({
+        value: item.name,
+        label: item.name,
+        ...item,
+    }));
+    console.log(options);
 
     const setSelectedOrigin = (value: Option) => {
         setOrigin({
@@ -68,9 +65,10 @@ const SearchAutocomplete = () => {
             options={options}
             onInputChange={setQuery}
             onValueChange={setSelectedOrigin}
-            isLoading={isLoading}
+            isLoading={isFetching}
             value={query}
             placeholder="Where are you commuting to?"
+            emptyMessage="No results found"
         />
     );
 };

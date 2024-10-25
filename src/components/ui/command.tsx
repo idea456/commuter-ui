@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Spinner } from "./spinner";
 
 const Command = React.forwardRef<
     React.ElementRef<typeof CommandPrimitive>,
@@ -43,7 +44,11 @@ const CommandInput = React.forwardRef<
         className={cn("flex items-center border rounded-lg px-3", className)}
         cmdk-input-wrapper=""
     >
-        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        {props?.isLoading ? (
+            <Spinner className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        ) : (
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        )}
         <CommandPrimitive.Input
             ref={ref}
             className={cn(
