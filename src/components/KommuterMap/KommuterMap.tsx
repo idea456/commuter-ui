@@ -298,7 +298,7 @@ const CommuterMap = () => {
                         width: "100%",
                         height: "100%",
                     }}
-                    mapStyle="mapbox://styles/mapbox/streets-v12"
+                    mapStyle="mapbox://styles/mapbox/light-v11"
                     minZoom={12}
                     maxZoom={17}
                 >
