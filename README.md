@@ -2,6 +2,11 @@
   <img src="https://github.com/user-attachments/assets/acd28622-5c2d-45d2-b745-80d1e39851d9" width="400" height="400"/>
 </div>
 
- Kommuter
+# Kommuter
 
-A search tool that allows you to search for residental properties that have the best commuting time to your school or workplace, check it out here: https://kommuter.site
+A search tool that allows you to search for residental properties that have the best commuting time to your school or workplace! This is still under work in progress, therefore there are some functionalities which are not implemented yet such as:
+- Additional forms for tweaking how many station transfers to search for
+- Improvements to responsive layout
+- Pricing details of each property
+
+
