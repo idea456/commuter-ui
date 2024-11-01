@@ -4,27 +4,29 @@ import {
     CommandItem,
     CommandList,
     CommandInput,
-} from "./ui/command";
+} from "./command";
 import { Command as CommandPrimitive } from "cmdk";
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "./skeleton";
 
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Label } from "./ui/label";
+import { Label } from "./label";
 import { SearchItem } from "@/types";
 import { useDevice } from "@/hooks/useDevice";
 
-export type Option = Record<"value" | "label", string> &
-    Record<string, string> &
-    SearchItem;
+export type Option = {
+    value: string;
+    label: string;
+};
+
+export type AutoCompleteItem = SearchItem & Option;
 
 type AutoCompleteProps = {
-    options: (Option & SearchItem)[];
+    options: AutoCompleteItem[];
     emptyMessage: string;
-    value?: Option & SearchItem;
-    onValueChange?: (value: Option) => void;
+    value?: AutoCompleteItem;
+    onValueChange?: (value: AutoCompleteItem) => void;
     onInputChange: (value: string) => void;
     isLoading?: boolean;
     disabled?: boolean;
@@ -44,7 +46,7 @@ export const AutoComplete = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const { isMobile } = useDevice();
     const [isOpen, setOpen] = useState(false);
-    const [selected, setSelected] = useState<Option>(value as Option);
+    const [selected, setSelected] = useState<AutoCompleteItem>(value);
     const [isFocused, setIsFocused] = useState(false);
     const [inputValue, setInputValue] = useState<string>(value?.label || "");
 
@@ -89,7 +91,7 @@ export const AutoComplete = ({
     }, [selected]);
 
     const handleSelectOption = useCallback(
-        (selectedOption: Option) => {
+        (selectedOption: AutoCompleteItem) => {
             setInputValue(selectedOption.label);
 
             setSelected(selectedOption);
@@ -111,7 +113,11 @@ export const AutoComplete = ({
                     ref={inputRef}
                     value={inputValue}
                     onValueChange={isLoading ? undefined : setInputValue}
-                    onInput={(e) => onInputChange(e.target?.value || "")}
+                    onInput={(e) =>
+                        onInputChange(
+                            (e.target as HTMLInputElement).value || ""
+                        )
+                    }
                     onBlur={handleBlur}
                     onFocus={() => {
                         setIsFocused(true);

@@ -1,6 +1,6 @@
 import { Property } from "@/types";
 import { ScrollArea } from "./ui/scroll-area";
-import { useRootStore } from "@/hooks/stores";
+import { useRootStore } from "@/stores";
 import PropertyCard from "./PropertyCard";
 
 type PropertiesListProps = {
@@ -17,7 +17,7 @@ const PropertiesList = ({
             {properties.map((item) => (
                 <PropertyCard
                     className={
-                        selectedProperty?.id === item.id
+                        selectedProperty?.property.id === item.id
                             ? "border-black border-2"
                             : ""
                     }

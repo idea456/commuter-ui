@@ -1,5 +1,5 @@
 import { Itineary } from "@/types";
-import { Badge } from "./ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { useDevice } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ export const Timeline = ({
         >
             {directions.legs.map((leg, i) => (
                 <div
+                    key={leg.from.name}
                     className="border-neutral-200 flex gap-3 p-2 hover:bg-neutral-100 rounded-lg cursor-pointer"
                     onMouseEnter={() => setHoveredDirectionIndex(i)}
                     onMouseLeave={() => setHoveredDirectionIndex(-1)}

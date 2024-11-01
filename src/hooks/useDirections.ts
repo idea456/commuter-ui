@@ -1,13 +1,13 @@
 import { Coordinate, PlanDataResponse } from "@/types";
+import { api } from "@/utils/api";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { useMemo } from "react";
 
 const fetchDirections = async (
-    origin?: Coordinate,
-    destination?: Coordinate
+    origin: Coordinate | null,
+    destination: Coordinate | null
 ) => {
-    const results = await axios.post("http://localhost:4001/directions", {
+    const results = await api.post("/directions", {
         origin,
         destination,
         options: {
@@ -19,16 +19,19 @@ const fetchDirections = async (
     return results.data;
 };
 
-const useDirections = (origin?: Coordinate, destination?: Coordinate) => {
+const useDirections = (
+    origin: Coordinate | null,
+    destination: Coordinate | null
+) => {
     const { data, ...rest } = useQuery<PlanDataResponse>({
         queryKey: ["directions", origin, destination],
         queryFn: () => fetchDirections(origin, destination),
-        enabled: origin !== undefined && destination !== undefined,
+        enabled: !!origin && !!destination,
     });
 
     const directions = useMemo(() => {
         // NOTE: Just returning the first iteneary for now, check on this later
-        if (!data) return;
+        if (!data) return null;
         return data?.itineraries;
     }, [data]);
 

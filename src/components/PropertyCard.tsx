@@ -31,24 +31,7 @@ const PropertyCard = ({ onClick, property, className }: PropertyCardProps) => {
                     </h3>
                 </div>
             </div>
-            <div
-                className="grid grid-flow-row grid-cols-2 mt-5"
-                style={
-                    {
-                        // columnGap: "1%",
-                    }
-                }
-            >
-                {/* <div className="flex flex-col gap-2">
-                    <h3 className="text-sm text-muted-foreground">
-                        Rental range
-                    </h3>
-                    <h3 className="text-xl font-medium">
-                        {toRinggit(property.rentalRange.fromPrice)} ~{" "}
-                        {toRinggit(property.rentalRange.toPrice)}
-                    </h3>
-                </div> */}
-
+            <div className="grid grid-flow-row grid-cols-2 mt-5">
                 <div className="flex flex-col gap-2">
                     <h3 className="text-sm text-muted-foreground">
                         Commute distance
