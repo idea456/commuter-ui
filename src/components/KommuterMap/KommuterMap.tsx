@@ -297,7 +297,6 @@ const CommuterMap = () => {
                     style={{
                         width: "100%",
                         height: "100%",
-                        borderRadius: 12,
                     }}
                     mapStyle="mapbox://styles/mapbox/streets-v12"
                     minZoom={12}
