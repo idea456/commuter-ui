@@ -1,58 +1,90 @@
-import { Separator } from "@radix-ui/react-separator";
+import { Separator } from "../ui/separator";
 import { Timeline } from "./Timeline";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
+import { Clock, Footprints, RailSymbol } from "lucide-react";
 import {
     Card,
     CardHeader,
     CardTitle,
     CardDescription,
     CardContent,
-} from "./ui/card";
+} from "../ui/card";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { useRootStore } from "@/hooks/stores";
+} from "../ui/dropdown-menu";
+import { useRootStore } from "@/stores";
 import { Itineary } from "@/types";
 import { useDevice } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 import { SearchIcon } from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
+import { toDistanceUnits, toTimeUnits } from "@/utils/units";
+import { useMemo } from "react";
 
 type ItinearyProps = {
-    directions?: Itineary[];
+    directions: Itineary[] | null;
     setHoveredDirectionIndex: React.Dispatch<
         React.SetStateAction<number | null>
     >;
     setSelectedDirection: React.Dispatch<React.SetStateAction<number | null>>;
+    isLoading?: boolean;
 };
 
 export const Summary = ({
     directions,
     setHoveredDirectionIndex,
     setSelectedDirection,
+    isLoading,
 }: ItinearyProps) => {
     const selectedProperty = useRootStore((state) => state.selectedProperty);
     const { isMobile, isDesktop } = useDevice();
 
-    if (!selectedProperty) return null;
+    if (isLoading) {
+        return (
+            <Card
+                className={cn("absolute z-10 border-none", {
+                    "lg:min-w-[380px] top-6 right-6": isDesktop,
+                    "min-w-full bottom-0 left-0 rounded-lg": isMobile,
+                })}
+            >
+                <CardHeader>
+                    <div className="w-full flex flex-col gap-2">
+                        <CardTitle>
+                            <Skeleton className="h-6 w-3/5" />
+                        </CardTitle>
+                        <CardDescription>
+                            <Skeleton className="h-6 w-4/5" />
+                        </CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent className="flex gap-3 flex-col">
+                    <div className="grid grid-cols-3 gap-3 w-full">
+                        <Skeleton className="h-6" />
+                        <Skeleton className="h-6" />
+                        <Skeleton className="h-6" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (!selectedProperty || !directions) return null;
+    const { property } = selectedProperty;
 
     return (
         <Card
             className={cn("absolute z-10 border-none", {
-                "max-w-[350px] max-h-[92vh] top-6 right-6": isDesktop,
+                "lg:max-w-[380px] max-h-[92vh] top-6 right-6": isDesktop,
                 "min-w-full max-h-[45vh] bottom-0 left-0 rounded-lg": isMobile,
             })}
         >
             <CardHeader className="relative flex flex-row justify-between items-start">
                 <div>
-                    <CardTitle className="text-lg">
-                        {selectedProperty.name}
-                    </CardTitle>
-                    <CardDescription>
-                        {selectedProperty.address}
-                    </CardDescription>
+                    <CardTitle className="text-lg">{property.name}</CardTitle>
+                    <CardDescription>{property.address}</CardDescription>
                 </div>
                 {isMobile && (
                     <DropdownMenu>
@@ -69,7 +101,7 @@ export const Summary = ({
                                 className="w-full"
                                 onClick={() =>
                                     window.open(
-                                        `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${selectedProperty.name.replace(
+                                        `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${property.name.replace(
                                             " ",
                                             "+"
                                         )}`
@@ -82,7 +114,7 @@ export const Summary = ({
                                 onClick={() =>
                                     window.open(
                                         `https://www.iproperty.com.my/rent/kuala-lumpur/all-residential/?place=Kuala+Lumpur&maxPrice=${2300}&q=${
-                                            selectedProperty.name.split(" ")[0]
+                                            property.name.split(" ")[0]
                                         }`
                                     )
                                 }
@@ -92,12 +124,12 @@ export const Summary = ({
                             <DropdownMenuItem
                                 onClick={() =>
                                     window.open(
-                                        `https://speedhome.com/rent/${selectedProperty.name
+                                        `https://speedhome.com/rent/${property.name
                                             .split(" ")
                                             .map((name) => name.toLowerCase())
                                             .join(
                                                 "-"
-                                            )}?q=${selectedProperty.name.replace(
+                                            )}?q=${property.name.replace(
                                             " ",
                                             "+"
                                         )}&min=${0}&max=${2300}`
@@ -111,6 +143,28 @@ export const Summary = ({
                 )}
             </CardHeader>
             <CardContent className="flex gap-3 flex-col">
+                <div className="flex items-center gap-3 mb-4 w-full">
+                    <div className="flex items-center space-x-2">
+                        <Footprints className="h-5 w-5 text-blue-500" />
+                        <span className="text-sm font-medium">
+                            {toDistanceUnits(directions[0].walkDistance)}
+                        </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Clock className="h-5 w-5 text-blue-500" />
+                        <span className="text-sm font-medium">
+                            {toTimeUnits(directions?.[0].duration)}
+                        </span>
+                    </div>
+                    {directions[0].transfers && (
+                        <div className="flex items-center space-x-2">
+                            <RailSymbol className="h-5 w-5 text-blue-500" />
+                            <span className="text-sm font-medium">
+                                {directions[0].transfers} transfers
+                            </span>
+                        </div>
+                    )}
+                </div>
                 {isDesktop && (
                     <DropdownMenu>
                         <DropdownMenuTrigger>
@@ -123,7 +177,7 @@ export const Summary = ({
                                 className="w-full"
                                 onClick={() =>
                                     window.open(
-                                        `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${selectedProperty.name.replace(
+                                        `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${property.name.replace(
                                             " ",
                                             "+"
                                         )}`
@@ -136,7 +190,7 @@ export const Summary = ({
                                 onClick={() =>
                                     window.open(
                                         `https://www.iproperty.com.my/rent/kuala-lumpur/all-residential/?place=Kuala+Lumpur&maxPrice=${2300}&q=${
-                                            selectedProperty.name.split(" ")[0]
+                                            property.name.split(" ")[0]
                                         }`
                                     )
                                 }
@@ -146,12 +200,12 @@ export const Summary = ({
                             <DropdownMenuItem
                                 onClick={() =>
                                     window.open(
-                                        `https://speedhome.com/rent/${selectedProperty.name
+                                        `https://speedhome.com/rent/${property.name
                                             .split(" ")
                                             .map((name) => name.toLowerCase())
                                             .join(
                                                 "-"
-                                            )}?q=${selectedProperty.name.replace(
+                                            )}?q=${property.name.replace(
                                             " ",
                                             "+"
                                         )}&min=${0}&max=${2300}`
@@ -164,13 +218,15 @@ export const Summary = ({
                     </DropdownMenu>
                 )}
 
-                <Separator />
                 {directions?.length && (
-                    <Timeline
-                        directions={directions[0]}
-                        setHoveredDirectionIndex={setHoveredDirectionIndex}
-                        setSelectedDirection={setSelectedDirection}
-                    />
+                    <>
+                        <Separator />
+                        <Timeline
+                            directions={directions[0]}
+                            setHoveredDirectionIndex={setHoveredDirectionIndex}
+                            setSelectedDirection={setSelectedDirection}
+                        />
+                    </>
                 )}
             </CardContent>
         </Card>

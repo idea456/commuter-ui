@@ -1,29 +1,32 @@
+import { useEffect } from "react";
 import {
     CommandGroup,
     CommandItem,
     CommandList,
     CommandInput,
-} from "./ui/command";
+} from "./command";
 import { Command as CommandPrimitive } from "cmdk";
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "./skeleton";
 
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Label } from "./ui/label";
+import { Label } from "./label";
 import { SearchItem } from "@/types";
 import { useDevice } from "@/hooks/useDevice";
 
-export type Option = Record<"value" | "label", string> &
-    Record<string, string> &
-    SearchItem;
+export type Option = {
+    value: string;
+    label: string;
+};
+
+export type AutoCompleteItem = SearchItem & Option;
 
 type AutoCompleteProps = {
-    options: (Option & SearchItem)[];
+    options: AutoCompleteItem[];
     emptyMessage: string;
-    value?: Option & SearchItem;
-    onValueChange?: (value: Option) => void;
+    value?: AutoCompleteItem;
+    onValueChange?: (value: AutoCompleteItem) => void;
     onInputChange: (value: string) => void;
     isLoading?: boolean;
     disabled?: boolean;
@@ -43,8 +46,13 @@ export const AutoComplete = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const { isMobile } = useDevice();
     const [isOpen, setOpen] = useState(false);
-    const [selected, setSelected] = useState<Option>(value as Option);
+    const [selected, setSelected] = useState<AutoCompleteItem>(value);
+    const [isFocused, setIsFocused] = useState(false);
     const [inputValue, setInputValue] = useState<string>(value?.label || "");
+
+    useEffect(() => {
+        if (options.length && isFocused) setOpen(true);
+    }, [options, isFocused]);
 
     const handleKeyDown = useCallback(
         (event: KeyboardEvent<HTMLDivElement>) => {
@@ -78,11 +86,12 @@ export const AutoComplete = ({
 
     const handleBlur = useCallback(() => {
         setOpen(false);
+        setIsFocused(false);
         setInputValue(selected?.label);
     }, [selected]);
 
     const handleSelectOption = useCallback(
-        (selectedOption: Option) => {
+        (selectedOption: AutoCompleteItem) => {
             setInputValue(selectedOption.label);
 
             setSelected(selectedOption);
@@ -104,16 +113,22 @@ export const AutoComplete = ({
                     ref={inputRef}
                     value={inputValue}
                     onValueChange={isLoading ? undefined : setInputValue}
-                    onInput={(e) => onInputChange(e.target?.value || "")}
+                    onInput={(e) =>
+                        onInputChange(
+                            (e.target as HTMLInputElement).value || ""
+                        )
+                    }
                     onBlur={handleBlur}
                     onFocus={() => {
-                        if (inputValue.length) setOpen(true);
+                        setIsFocused(true);
+                        if (inputValue?.length) setOpen(true);
                     }}
                     placeholder={placeholder}
                     disabled={disabled}
                     className={cn("text-base", {
                         "border-none": isMobile,
                     })}
+                    isLoading={isLoading}
                 />
             </div>
             <div className="relative mt-1">
@@ -152,9 +167,9 @@ export const AutoComplete = ({
                                                 !isSelected ? "pl-4" : null
                                             )}
                                         >
-                                            {isSelected ? (
+                                            {/* {isSelected ? (
                                                 <Check className="w-4" />
-                                            ) : null}
+                                            ) : null} */}
                                             <div className="flex flex-col gap-1 w-full py-2">
                                                 <Label className="font-bold">
                                                     {option.name}

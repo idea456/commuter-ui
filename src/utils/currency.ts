@@ -3,6 +3,5 @@ export const toRinggit = (rawCurrency: number) => {
         style: "currency",
         currency: "MYR",
         currencyDisplay: "narrowSymbol",
-        trailingZeroDisplay: "stripIfInteger",
     }).format(rawCurrency);
 };

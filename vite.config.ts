@@ -4,14 +4,12 @@ import { defineConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
-    plugins: [
-        react(),
-        svgr({
-            svgrOptions: {
-                // svgr options
-            },
-        }),
-    ],
+    plugins: [react(), svgr()],
+    define: {
+        "process.env.MapboxAccessToken": JSON.stringify(
+            process.env.MAPBOX_ACCESS_TOKEN
+        ),
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
