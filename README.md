@@ -1,30 +1,12 @@
-# React + TypeScript + Vite
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/acd28622-5c2d-45d2-b745-80d1e39851d9" width="400" height="400"/>
+</div>
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Kommuter
 
-Currently, two official plugins are available:
+A search tool that allows you to search for residental properties that have the best commuting time to your school or workplace! This is still under work in progress, therefore there are some functionalities which are not implemented yet such as:
+- Additional forms for tweaking how many station transfers to search for
+- Improvements to responsive layout
+- Pricing details of each property
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
