@@ -8,10 +8,16 @@ export type Coordinate = {
     longitude: number;
 };
 
-export type NearestProperty = {
+export type TransitableProperty = {
     property: Property;
     score: number;
+    walkDistanceNearestStop: number;
+    walkTimeNearestStop: number;
+    nearestStop: Stop;
 };
+
+// NOTE: Add more type variants for NearestProperty
+export type NearestProperty = TransitableProperty;
 
 export type Property = {
     id: string;
@@ -78,6 +84,7 @@ export type Itineary = {
     walkDistance: number;
     walkTime: number;
     waitingTime: number;
+    transfers: number;
     legs: Leg[];
 };
 
@@ -87,4 +94,11 @@ export type SearchItem = {
     name: string;
     address: string;
     boundingBox: number[];
+};
+
+export type Stop = {
+    stop_id: string[];
+    name: string;
+    display_name: string;
+    coordinates: Coordinate;
 };
