@@ -8,12 +8,19 @@ type StopPinProps = {
     propertiesNearStop: NearestProperty[];
     onClick: (stop: Stop) => void;
     isSelected?: boolean;
+    zoomLevel?: number;
 };
 
-export const StopPin = ({ stop, onClick, isSelected }: StopPinProps) => {
+export const StopPin = ({
+    stop,
+    onClick,
+    isSelected,
+    zoomLevel,
+}: StopPinProps) => {
     const stopId = stop.stop_id[0];
     const [isHovering, setIsHovering] = useState(false);
 
+    // if zoomLevel<=12 return <></>;
     return (
         <Marker
             key={stop?.name}
@@ -25,8 +32,9 @@ export const StopPin = ({ stop, onClick, isSelected }: StopPinProps) => {
                 onMouseOver={() => setIsHovering(true)}
                 onMouseOut={() => setIsHovering(false)}
                 className={cn(
-                    "rounded-lg py-1 px-2 text-white hover:border hover:border-black hover:border-2 cursor-pointer",
+                    "rounded-lg p-1 text-white hover:border hover:border-black hover:border-2 cursor-pointer z-[-1]",
                     {
+                        "bg-route-ag": stopId.startsWith("AG"),
                         "bg-route-py": stopId.startsWith("PY"),
                         "bg-route-kj": stopId.startsWith("KJ"),
                         "bg-route-ph": stopId.startsWith("PH"),

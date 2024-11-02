@@ -6,6 +6,7 @@ import {
     Marker,
     NavigationControl,
     MapRef,
+    Source,
 } from "react-map-gl";
 import {
     TooltipProvider,
@@ -25,7 +26,20 @@ import useDirections from "@/hooks/useDirections";
 import { StopSummary } from "./StopSummary";
 import { StopPin } from "./StopPin";
 import { DirectionsGeometry } from "./DirectionsGeometry";
-import { bbox, lineString } from "@turf/turf";
+import {
+    bbox,
+    center,
+    lineString,
+    multiPoint,
+    point,
+    points,
+} from "@turf/turf";
+import { Position } from "geojson";
+import {
+    clusterLayer,
+    clusterCountLayer,
+    unclusteredPointLayer,
+} from "./PropertiesCluster";
 
 const OriginPin = () => {
     return <MapPin fill="red" width={40} height={40} strokeWidth={1.5} />;
@@ -100,8 +114,6 @@ const CommuterMap = () => {
         setSelectedProperty(null);
         setSelectedStop(transitableStop);
     };
-
-    console.log(directions);
 
     const transitableStops: Map<string, TransitableStop> = useMemo(() => {
         if (!properties?.length) return new Map();
@@ -190,6 +202,41 @@ const CommuterMap = () => {
         }
     }, [selectedStop]);
 
+    const propertiesFeatureCollection = useMemo(() => {
+        if (!properties?.length) return points([]);
+
+        const positions: Position[] = [];
+        properties.forEach((property) => {
+            const { latitude, longitude } = property.property.coordinates;
+            positions.push([longitude, latitude]);
+        });
+
+        return points(positions);
+    }, [properties]);
+
+    useEffect(() => {
+        if (
+            properties?.length &&
+            mapRef?.current &&
+            !(selectedProperty || selectedStop)
+        ) {
+            const positions: Position[] = [];
+            points;
+            properties.forEach((property) => {
+                const { latitude, longitude } = property.property.coordinates;
+                positions.push([longitude, latitude]);
+            });
+
+            const propertiesPoint = points(positions);
+            const boundingBox = bbox(propertiesPoint);
+            const bounds = new mapboxgl.LngLatBounds(boundingBox);
+
+            mapRef.current.fitBounds(bounds, {
+                zoom: 12,
+            });
+        }
+    }, [properties, origin, selectedProperty, selectedStop]);
+
     useEffect(() => {
         if (directions?.length && mapRef?.current) {
             const lines = [];
@@ -214,6 +261,8 @@ const CommuterMap = () => {
             });
         }
     }, [directions]);
+
+    console.log(propertiesFeatureCollection);
 
     const propertiesMarkers = useMemo(
         () =>
@@ -298,9 +347,10 @@ const CommuterMap = () => {
                         width: "100%",
                         height: "100%",
                     }}
-                    mapStyle="mapbox://styles/mapbox/streets-v12"
+                    mapStyle="mapbox://styles/mapbox/light-v11"
                     minZoom={12}
                     maxZoom={17}
+                    interactiveLayerIds={[clusterLayer.id]}
                 >
                     <NavigationControl position="bottom-left" />
                     <Layer
@@ -334,6 +384,20 @@ const CommuterMap = () => {
                     )}
                     {stopsMarkers}
                     {propertiesMarkers}
+                    {/* {properties?.length && (
+                        <Source
+                            type="geojson"
+                            id="properties"
+                            cluster
+                            clusterMaxZoom={14}
+                            clusterRadius={70}
+                            data={propertiesFeatureCollection}
+                        >
+                            <Layer {...clusterLayer} />
+                            <Layer {...clusterCountLayer} />
+                            <Layer {...unclusteredPointLayer} />
+                        </Source>
+                    )} */}
                     {directions?.length && (
                         <DirectionsGeometry
                             direction={directions[0]}
