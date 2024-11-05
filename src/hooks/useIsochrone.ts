@@ -15,7 +15,9 @@ const fetchIsochrone = async (options: GetIsochroneOptions) => {
     const res = await mapboxApi.get<FeatureCollection>(
         `/isochrone/v1/mapbox/walking/${origin.longitude},${
             origin.latitude
-        }?contours_meters=${walkDistance}&polygons=true&access_token=${"pk.eyJ1IjoiaWRlYTQ1NiIsImEiOiJja2ZiYmZ4b2UwMWF2MnhxMjRwNmV2aTc0In0.FRWTXiH1jcNSTdOSrIlXLQ"}`,
+        }?contours_meters=${walkDistance}&polygons=true&access_token=${
+            import.meta.env.MAPBOX_ACCESS_TOKEN
+        }`
     );
 
     return res.data;
