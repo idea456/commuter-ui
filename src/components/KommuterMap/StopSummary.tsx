@@ -1,14 +1,24 @@
-import { Building2, Hotel, House } from "lucide-react";
+import {
+    Building2,
+    Clock,
+    Footprints,
+    Hotel,
+    House,
+    RailSymbol,
+} from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { useRootStore } from "@/stores";
 import { NearestProperty, Stop } from "@/types";
 import { useDevice } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
+import { toDistanceUnits, toTimeUnits } from "@/utils/units";
+import { Badge } from "../ui/badge";
 
 type StopSummaryprops = {
     stop?: Stop;
     propertiesNearStop?: NearestProperty[];
+    setSelectedStop: (selectedStop: Stop | null) => void;
 };
 
 const propertyIcon: Record<string, JSX.Element> = {
@@ -19,33 +29,34 @@ const propertyIcon: Record<string, JSX.Element> = {
     Multiple: <House size={15} />,
 };
 
+type NearestPropertyCardProps = {
+    nearestProperty: NearestProperty;
+    setSelectedStop: (selectedStop: Stop | null) => void;
+};
+
 const NearestPropertyCard = ({
     nearestProperty,
-}: {
-    nearestProperty: NearestProperty;
-}) => {
+    setSelectedStop,
+}: NearestPropertyCardProps) => {
     const { property } = nearestProperty;
 
     const propertyType = property.type.split("\n")[0];
     const setDestination = useRootStore((state) => state.setDestination);
     const setSelectedProperty = useRootStore(
-        (state) => state.setSelectedProperty
+        (state) => state.setSelectedProperty,
     );
 
     const onClickProperty = () => {
         setDestination(nearestProperty.property.coordinates);
         setSelectedProperty(nearestProperty);
+        setSelectedStop(null);
     };
 
-    const walkTimeLabel =
-        nearestProperty.walkTimeNearestStop > 60
-            ? `${(nearestProperty.walkTimeNearestStop / 60).toFixed(1)} minutes`
-            : `${nearestProperty.walkTimeNearestStop} seconds`;
-
+    const walkTimeLabel = toTimeUnits(nearestProperty.walkTimeNearestStop);
     return (
         <div
             className={cn(
-                "relative border rounded-lg mb-2 p-4 hover:bg-neutral-100 cursor-pointer flex flex-col"
+                "relative border rounded-lg mb-2 p-4 hover:bg-neutral-100 cursor-pointer flex flex-col",
             )}
             onClick={onClickProperty}
         >
@@ -57,33 +68,35 @@ const NearestPropertyCard = ({
                     </h3>
                 </div>
                 <div className="flex gap-1 items-center">
-                    <div>
-                        <h3 className="text-black text-sm flex gap-1 items-center mt-3">
-                            {propertyIcon[propertyType]}
-                            {propertyType}
-                        </h3>
-                    </div>
+                    <Badge variant="outline" className="gap-2 my-2">
+                        {propertyIcon[propertyType]}
+                        {propertyType}
+                    </Badge>
                 </div>
             </div>
             <div className="grid grid-flow-row grid-cols-2 mt-3 gap-3">
-                <div className="flex flex-col gap-1">
-                    <h3 className="text-sm text-muted-foreground">Distance</h3>
-
-                    <h3 className="text-sm font-medium">
-                        {nearestProperty.walkDistanceNearestStop} metres
-                    </h3>
+                <div className="flex items-center space-x-2">
+                    <Footprints className="h-5 w-5 text-blue-500" />
+                    <span className="text-sm font-medium">
+                        {toDistanceUnits(
+                            nearestProperty.walkDistanceNearestStop,
+                        )}
+                    </span>
                 </div>
-
-                <div className="flex flex-col gap-1">
-                    <h3 className="text-sm text-muted-foreground">Time</h3>
-                    <h3 className="text-sm font-medium">{walkTimeLabel}</h3>
+                <div className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5 text-blue-500" />
+                    <span className="text-sm font-medium">{walkTimeLabel}</span>
                 </div>
             </div>
         </div>
     );
 };
 
-export const StopSummary = ({ stop, propertiesNearStop }: StopSummaryprops) => {
+export const StopSummary = ({
+    stop,
+    propertiesNearStop,
+    setSelectedStop,
+}: StopSummaryprops) => {
     const { isMobile, isDesktop } = useDevice();
     if (!stop) return;
 
@@ -110,6 +123,7 @@ export const StopSummary = ({ stop, propertiesNearStop }: StopSummaryprops) => {
                     {propertiesNearStop?.map((propertyNearStop) => (
                         <NearestPropertyCard
                             nearestProperty={propertyNearStop}
+                            setSelectedStop={setSelectedStop}
                         />
                     ))}
                 </div>
