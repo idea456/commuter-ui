@@ -4,43 +4,45 @@ import { z } from "zod";
 import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "../ui/dialog";
 import { AutoComplete, AutoCompleteItem } from "../ui/autocomplete";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSearch from "@/hooks/useSearch";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useRootStore } from "@/stores";
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "../ui/select";
 import { useDevice } from "@/hooks/useDevice";
 import { Slider } from "../ui/slider";
 import { Coordinate } from "@/types";
+import { cn } from "@/lib/utils";
+import { Spinner } from "../ui/spinner";
+import useNearestProperties, {
+    NearestPropertiesOption,
+} from "@/hooks/useNearestProperties";
+import useWalkableProperties from "@/hooks/useWalkableProperties";
+
+const coordinateSchema = z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+});
 
 const formSchema = z.object({
-    destination: z.string().min(0),
-    minPrice: z.number(),
-    maxPrice: z.number(),
+    origin: coordinateSchema,
+    walkDistance: z.number().optional().default(1000),
+    minTransfers: z.number().optional().default(2),
+    maxTransfers: z.number().optional().default(5),
+    mode: z.union([z.literal("walking"), z.literal("transit")]).optional(),
 });
 
 type SearchAutocompleteProps = {
     onSelected: (value: AutoCompleteItem) => void;
+    errorMessage?: string;
 };
 
 export type SearchValues = z.infer<typeof formSchema>;
 
-const SearchAutocomplete = ({ onSelected }: SearchAutocompleteProps) => {
+const SearchAutocomplete = ({
+    onSelected,
+    errorMessage,
+}: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const debouncedQuery = useDebounce(query, 500);
     const { items, isFetching } = useSearch(debouncedQuery);
@@ -60,198 +62,232 @@ const SearchAutocomplete = ({ onSelected }: SearchAutocompleteProps) => {
             value={query}
             placeholder="Where are you commuting to?"
             emptyMessage="No results found"
+            errorMessage={errorMessage}
         />
     );
 };
 
 const SearchForm = () => {
     const { isMobile } = useDevice();
-    const [selectedOrigin, setSelectedOrigin] = useState<Coordinate | null>();
     const setOrigin = useRootStore((state) => state.setOrigin);
+    const setProperties = useRootStore((state) => state.setProperties);
+    const setWalkDistance = useRootStore((state) => state.setWalkDistance);
+
     const form = useForm<SearchValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            destination: "",
-            minPrice: 0,
-            maxPrice: 0,
+            mode: "walking",
+            minTransfers: 2,
+            maxTransfers: 3,
+            walkDistance: 1000,
         },
     });
+    const values = form.watch();
+    const errors = form.formState.errors;
 
-    const onSubmit = () => {
-        if (selectedOrigin) setOrigin(selectedOrigin);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { properties, isLoading, isError } = useNearestProperties(
+        isSubmitting,
+        values,
+    );
+
+    const {
+        properties: walkableProperties,
+        isLoading: isWalkablePropertiesLoading,
+    } = useWalkableProperties(values, isSubmitting);
+
+    const onSubmit = (values: z.infer<typeof formSchema>) => {
+        setOrigin(values.origin);
+        console.log(values);
+        setIsSubmitting(true);
+        // if (selectedOrigin) setOrigin(selectedOrigin);
     };
 
-    const onSelected = (value: AutoCompleteItem) => {
-        setSelectedOrigin({
-            latitude: value.latitude,
-            longitude: value.longitude,
-        });
-    };
+    console.log(walkableProperties);
 
     if (isMobile) {
         return <SearchAutocomplete onSelected={onSelected} />;
     }
 
+    useEffect(() => {
+        if (properties?.length) {
+            setProperties(properties);
+        }
+        if (isError || properties?.length) {
+            setIsSubmitting(false);
+        }
+    }, [properties, isError]);
+
     return (
-        <Dialog>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Filter</DialogTitle>
-                    <DialogDescription>
-                        You can make changes to how we should find properties
-                        for you
-                    </DialogDescription>
-                </DialogHeader>
-                <div>
-                    <div>
-                        <h1>How do you want to commute?</h1>
-                        <div className="flex gap-2">
-                            <Select>
-                                <SelectTrigger className="flex-3">
-                                    <SelectValue placeholder="I want to commute by..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="apple">
-                                            Commute by walking
-                                        </SelectItem>
-                                        <SelectItem value="banana">
-                                            Commute by train
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="flex-2">
-                                    <SelectValue placeholder="By distance..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="apple">
-                                            within 500 metres
-                                        </SelectItem>
-                                        <SelectItem value="banana">
-                                            within 1 kilometre
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    {/* <div>
-                        <h1>How many station transfers do you wish to take?</h1>
-                        <div className="flex gap-2">
-                            <Select>
-                                <SelectTrigger className="flex-3">
-                                    <SelectValue placeholder="I want to commute by..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="apple">
-                                            Commute by walking
-                                        </SelectItem>
-                                        <SelectItem value="banana">
-                                            Commute by train
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="flex-2">
-                                    <SelectValue placeholder="By distance..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="apple">
-                                            within 500 metres
-                                        </SelectItem>
-                                        <SelectItem value="banana">
-                                            within 1 kilometre
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div> */}
-                    <Button>Submit</Button>
-                </div>
-            </DialogContent>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                    {/* <Button>MRT View</Button> */}
-                    <fieldset className="w-full rounded-lg border py-4 px-5">
-                        <legend className="-ml-1 px-1 text-sm font-medium">
-                            Search
-                        </legend>
-                        <FormField
-                            control={form.control}
-                            name="destination"
-                            render={() => (
-                                <FormItem>
-                                    <FormControl>
-                                        <div className="flex items-center gap-2">
-                                            <SearchAutocomplete
-                                                onSelected={onSelected}
-                                            />
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <div>
-                            <div className="my-4">
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <fieldset className="w-full rounded-lg border py-4 px-5">
+                    <legend className="-ml-1 px-1 text-sm font-medium">
+                        Search
+                    </legend>
+                    <FormField
+                        control={form.control}
+                        name="origin"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <div className="flex items-start flex-col">
+                                        <SearchAutocomplete
+                                            onSelected={({
+                                                latitude,
+                                                longitude,
+                                            }) => {
+                                                setOrigin({
+                                                    latitude,
+                                                    longitude,
+                                                });
+                                                field.onChange({
+                                                    latitude,
+                                                    longitude,
+                                                });
+                                            }}
+                                            errorMessage={
+                                                errors.origin?.message
+                                            }
+                                        />
+                                        {errors.origin && (
+                                            <span className="text-sm text-red-500">
+                                                This field is required
+                                            </span>
+                                        )}
+                                    </div>
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="mode"
+                        render={({ field }) => (
+                            <div className="my-3">
                                 <h1 className="mb-2">
                                     What is your preferred commuting method?
                                 </h1>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="border border-neutral rounded-lg py-2 px-4 flex flex-col items-center justify-center hover:bg-neutral-100 cursor-pointer">
+                                    <div
+                                        className={cn(
+                                            "border border-neutral rounded-lg py-2 px-4 flex flex-col items-center justify-center hover:bg-neutral-100 cursor-pointer",
+                                            {
+                                                "border-2 border-black":
+                                                    field.value === "walking",
+                                            },
+                                        )}
+                                        onClick={() =>
+                                            field.onChange("walking")
+                                        }
+                                    >
                                         <span className="text-2xl">🚶‍♂️</span>
                                         <h1>By walking</h1>
                                     </div>
-                                    <div className="border border-neutral rounded-lg py-2 px-4 flex flex-col items-center justify-center hover:bg-neutral-100 cursor-pointer border-black border-2">
+                                    <div
+                                        className={cn(
+                                            "border border-neutral rounded-lg py-2 px-4 flex flex-col items-center justify-center hover:bg-neutral-100 cursor-pointer",
+                                            {
+                                                "border-2 border-black":
+                                                    field.value === "transit",
+                                            },
+                                        )}
+                                        onClick={() =>
+                                            field.onChange("transit")
+                                        }
+                                    >
                                         <span className="text-2xl">🚇</span>
                                         <h1>By transit</h1>
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-center gap-4"></div>
                             </div>
-
-                            {/* <div className="my-4">
-                                <h1 className="mb-2">
-                                    How many station transfers are you
-                                    comfortable with?
-                                </h1>
-                                <Slider
-                                    defaultValue={[3]}
-                                    min={2}
-                                    max={8}
-                                    step={1}
-                                    className="w-full max-w-md"
-                                >
-                                    <div className="bg-gray-300 dark:bg-gray-700">
-                                        <div className="bg-primary" />
+                        )}
+                    />
+                    {values.mode === "walking" && (
+                        <FormField
+                            control={form.control}
+                            name="walkDistance"
+                            render={({ field }) => (
+                                <div className="my-4">
+                                    <h1>How far do you wanna walk?</h1>
+                                    <Slider
+                                        defaultValue={[field.value]}
+                                        min={500}
+                                        max={2000}
+                                        step={250}
+                                        className="w-full max-w-md mt-4"
+                                        onValueChange={(values) => {
+                                            setWalkDistance(values[0]);
+                                            field.onChange(values[0]);
+                                        }}
+                                    >
+                                        <div className="bg-gray-300 dark:bg-gray-700">
+                                            <div className="bg-primary" />
+                                        </div>
+                                        <div className="bg-white shadow-md dark:bg-gray-950" />
+                                    </Slider>
+                                    <div className="flex justify-between w-full max-w-md text-sm text-gray-500 dark:text-gray-400 mt-3">
+                                        <span>500m</span>
+                                        <span>750m</span>
+                                        <span>1km</span>
+                                        <span>1.25km</span>
+                                        <span>1.5km</span>
+                                        <span>1.75km</span>
+                                        <span>2km</span>
                                     </div>
-                                    <div className="bg-white shadow-md dark:bg-gray-950" />
-                                </Slider>
-                                <div className="flex justify-between w-full max-w-md text-sm text-gray-500 dark:text-gray-400 mt-3">
-                                    <span>2</span>
-                                    <span>3</span>
-                                    <span>4</span>
-                                    <span>5</span>
-                                    <span>6</span>
-                                    <span>7</span>
-                                    <span>8</span>
                                 </div>
-                            </div> */}
+                            )}
+                        />
+                    )}
+                    {values.mode === "transit" && (
+                        <FormField
+                            control={form.control}
+                            name="maxTransfers"
+                            render={({ field }) => (
+                                <div className="my-4">
+                                    <h1 className="mb-2">
+                                        How many station transfers are you
+                                        comfortable with?
+                                    </h1>
+                                    <Slider
+                                        defaultValue={[field.value]}
+                                        min={2}
+                                        max={8}
+                                        step={1}
+                                        className="w-full max-w-md"
+                                        onValueChange={(values) =>
+                                            field.onChange(values[0])
+                                        }
+                                    >
+                                        <div className="bg-gray-300 dark:bg-gray-700">
+                                            <div className="bg-primary" />
+                                        </div>
+                                        <div className="bg-white shadow-md dark:bg-gray-950" />
+                                    </Slider>
+                                    <div className="flex justify-between w-full max-w-md text-sm text-gray-500 dark:text-gray-400 mt-3">
+                                        <span>2</span>
+                                        <span>3</span>
+                                        <span>4</span>
+                                        <span>5</span>
+                                        <span>6</span>
+                                        <span>7</span>
+                                        <span>8</span>
+                                    </div>
+                                </div>
+                            )}
+                        />
+                    )}
 
-                            <Button size="lg" className="mt-2">
-                                Submit
-                            </Button>
-                        </div>
-                    </fieldset>
-                </form>
-            </Form>
-        </Dialog>
+                    <div>
+                        <Button size="lg" className="mt-2" disabled={isLoading}>
+                            {isLoading && <Spinner className="mr-4" />}
+                            <span>Submit</span>
+                        </Button>
+                    </div>
+                </fieldset>
+            </form>
+        </Form>
     );
 };
 
