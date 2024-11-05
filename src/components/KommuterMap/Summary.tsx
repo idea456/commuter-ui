@@ -1,7 +1,14 @@
 import { Separator } from "../ui/separator";
 import { Timeline } from "./Timeline";
 import { Button } from "../ui/button";
-import { Clock, Footprints, RailSymbol } from "lucide-react";
+import {
+    Building2,
+    Clock,
+    Footprints,
+    Hotel,
+    House,
+    RailSymbol,
+} from "lucide-react";
 import {
     Card,
     CardHeader,
@@ -22,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { SearchIcon } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 import { toDistanceUnits, toTimeUnits } from "@/utils/units";
-import { useMemo } from "react";
+import { Badge } from "../ui/badge";
 
 type ItinearyProps = {
     directions: Itineary[] | null;
@@ -31,6 +38,14 @@ type ItinearyProps = {
     >;
     setSelectedDirection: React.Dispatch<React.SetStateAction<number | null>>;
     isLoading?: boolean;
+};
+
+const propertyIcon: Record<string, JSX.Element> = {
+    Condominium: <Building2 size={15} />,
+    Apartment: <Building2 size={15} />,
+    "Service Residence": <Hotel size={15} />,
+    "Terraced House": <House size={15} />,
+    Multiple: <House size={15} />,
 };
 
 export const Summary = ({
@@ -81,10 +96,13 @@ export const Summary = ({
                 "min-w-full max-h-[45vh] bottom-0 left-0 rounded-lg": isMobile,
             })}
         >
-            <CardHeader className="relative flex flex-row justify-between items-start">
+            <CardHeader className="relative flex flex-row justify-between items-start pb-4">
                 <div>
                     <CardTitle className="text-lg">{property.name}</CardTitle>
                     <CardDescription>{property.address}</CardDescription>
+                    <Badge variant="outline" className="gap-2 px-3 mt-3">
+                        {propertyIcon[property.type]} {property.type}
+                    </Badge>
                 </div>
                 {isMobile && (
                     <DropdownMenu>
@@ -103,8 +121,8 @@ export const Summary = ({
                                     window.open(
                                         `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${property.name.replace(
                                             " ",
-                                            "+"
-                                        )}`
+                                            "+",
+                                        )}`,
                                     )
                                 }
                             >
@@ -115,7 +133,7 @@ export const Summary = ({
                                     window.open(
                                         `https://www.iproperty.com.my/rent/kuala-lumpur/all-residential/?place=Kuala+Lumpur&maxPrice=${2300}&q=${
                                             property.name.split(" ")[0]
-                                        }`
+                                        }`,
                                     )
                                 }
                             >
@@ -128,11 +146,11 @@ export const Summary = ({
                                             .split(" ")
                                             .map((name) => name.toLowerCase())
                                             .join(
-                                                "-"
+                                                "-",
                                             )}?q=${property.name.replace(
                                             " ",
-                                            "+"
-                                        )}&min=${0}&max=${2300}`
+                                            "+",
+                                        )}&min=${0}&max=${2300}`,
                                     )
                                 }
                             >
@@ -179,8 +197,8 @@ export const Summary = ({
                                     window.open(
                                         `https://www.propertyguru.com.my/property-for-rent?market=residential&maxprice=1700&freetext=${property.name.replace(
                                             " ",
-                                            "+"
-                                        )}`
+                                            "+",
+                                        )}`,
                                     )
                                 }
                             >
@@ -191,7 +209,7 @@ export const Summary = ({
                                     window.open(
                                         `https://www.iproperty.com.my/rent/kuala-lumpur/all-residential/?place=Kuala+Lumpur&maxPrice=${2300}&q=${
                                             property.name.split(" ")[0]
-                                        }`
+                                        }`,
                                     )
                                 }
                             >
@@ -204,11 +222,11 @@ export const Summary = ({
                                             .split(" ")
                                             .map((name) => name.toLowerCase())
                                             .join(
-                                                "-"
+                                                "-",
                                             )}?q=${property.name.replace(
                                             " ",
-                                            "+"
-                                        )}&min=${0}&max=${2300}`
+                                            "+",
+                                        )}&min=${0}&max=${2300}`,
                                     )
                                 }
                             >

@@ -17,7 +17,7 @@ const fetchIsochrone = async (options: GetIsochroneOptions) => {
             origin.latitude
         }?contours_meters=${walkDistance}&polygons=true&access_token=${
             import.meta.env.MAPBOX_ACCESS_TOKEN
-        }`
+        }`,
     );
 
     return res.data;
@@ -27,7 +27,7 @@ export const useIsochrone = (options: GetIsochroneOptions) => {
     const query = useQuery({
         queryKey: ["isochrone", options],
         queryFn: () => fetchIsochrone(options),
-        enabled: !!options && !!options.origin && !!options.walkDistance,
+        enabled: !!options.origin && !!options.walkDistance,
     });
 
     return query;

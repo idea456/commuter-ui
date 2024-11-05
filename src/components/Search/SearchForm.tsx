@@ -72,6 +72,7 @@ const SearchForm = () => {
     const setOrigin = useRootStore((state) => state.setOrigin);
     const setProperties = useRootStore((state) => state.setProperties);
     const setWalkDistance = useRootStore((state) => state.setWalkDistance);
+    const setMode = useRootStore((state) => state.setMode);
 
     const form = useForm<SearchValues>({
         resolver: zodResolver(formSchema),
@@ -98,9 +99,8 @@ const SearchForm = () => {
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         setOrigin(values.origin);
-        console.log(values);
         setIsSubmitting(true);
-        // if (selectedOrigin) setOrigin(selectedOrigin);
+        setMode(values.mode);
     };
 
     console.log(walkableProperties);
@@ -110,13 +110,16 @@ const SearchForm = () => {
     }
 
     useEffect(() => {
-        if (properties?.length) {
+        if (properties?.length && values.mode === "transit") {
             setProperties(properties);
+        }
+        if (walkableProperties?.length && values.mode === "walking") {
+            setProperties(walkableProperties);
         }
         if (isError || properties?.length) {
             setIsSubmitting(false);
         }
-    }, [properties, isError]);
+    }, [properties, walkableProperties, isError]);
 
     return (
         <Form {...form}>

@@ -22,11 +22,13 @@ type WalkablePropertyOption = {
 const fetchWalkableProperties = async (options: WalkablePropertyOption) => {
     const { origin, walkDistance } = options;
     if (!origin) return [];
+
     try {
         const results = await api.get(
-            `/properties/nearest/walkable?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}`,
+            `/properties/nearest/walkable?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}&page=1&per_page=20`,
         );
 
+        console.log(results.data);
         return results.data;
     } catch (err) {
         if (err instanceof Error) {
@@ -51,11 +53,6 @@ const useWalkableProperties = (
         const transitableProperties: TransitableProperty[] = data?.map(
             (transitableProperty) => ({
                 property: transitableProperty.property,
-                score: transitableProperty.score,
-                nearestStop: transitableProperty.nearest_stop,
-                walkDistanceNearestStop:
-                    transitableProperty.walk_distance_nearest_stop,
-                walkTimeNearestStop: transitableProperty.walk_time_nearest_stop,
             }),
         );
         return transitableProperties;

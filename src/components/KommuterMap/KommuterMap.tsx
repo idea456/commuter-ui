@@ -102,6 +102,7 @@ const CommuterMap = () => {
     const destination = useRootStore((state) => state.destination);
     const properties = useRootStore((state) => state.properties);
     const walkDistance = useRootStore((state) => state.walkDistance);
+    const mode = useRootStore((state) => state.mode);
     const setDestination = useRootStore((state) => state.setDestination);
 
     const { directions, isLoading: isDirectionsLoading } = useDirections(
@@ -123,11 +124,11 @@ const CommuterMap = () => {
     };
 
     const transitableStops: Map<string, TransitableStop> = useMemo(() => {
-        if (!properties?.length) return new Map();
+        if (!properties?.length || mode !== "transit") return new Map();
 
         let stops = new Map<string, TransitableStop>();
         properties.forEach((transitableProperty) => {
-            const stopName = transitableProperty.nearestStop.name;
+            const stopName = transitableProperty.nearestStop?.name;
             const transitableStop = stops.get(stopName);
             if (transitableStop) {
                 stops.set(stopName, {
@@ -351,7 +352,7 @@ const CommuterMap = () => {
 
                 const { properties } = cluster;
                 const propertyResult = properties.property;
-                const score = properties.score;
+                const score = mode === "transit" ? properties.score : 0;
 
                 return (
                     <Marker
@@ -416,6 +417,7 @@ const CommuterMap = () => {
             {!selectedProperty && (
                 <StopSummary
                     stop={selectedStop?.stop}
+                    setSelectedStop={setSelectedStop}
                     propertiesNearStop={selectedStop?.propertiesNearStop}
                 />
             )}
