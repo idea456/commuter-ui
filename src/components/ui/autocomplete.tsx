@@ -25,6 +25,7 @@ export type AutoCompleteItem = SearchItem & Option;
 type AutoCompleteProps = {
     options: AutoCompleteItem[];
     emptyMessage: string;
+    errorMessage?: string;
     value?: AutoCompleteItem;
     onValueChange?: (value: AutoCompleteItem) => void;
     onInputChange: (value: string) => void;
@@ -41,6 +42,7 @@ export const AutoComplete = ({
     onValueChange,
     onInputChange,
     disabled,
+    errorMessage,
     isLoading = false,
 }: AutoCompleteProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +71,7 @@ export const AutoComplete = ({
             // This is not a default behaviour of the <input /> field
             if (event.key === "Enter" && input.value !== "") {
                 const optionToSelect = options.find(
-                    (option) => option.label === input.value
+                    (option) => option.label === input.value,
                 );
                 if (optionToSelect) {
                     setSelected(optionToSelect);
@@ -81,7 +83,7 @@ export const AutoComplete = ({
                 input.blur();
             }
         },
-        [isOpen, options, onValueChange]
+        [isOpen, options, onValueChange],
     );
 
     const handleBlur = useCallback(() => {
@@ -103,7 +105,7 @@ export const AutoComplete = ({
                 inputRef?.current?.blur();
             }, 0);
         },
-        [onValueChange]
+        [onValueChange],
     );
 
     return (
@@ -115,7 +117,7 @@ export const AutoComplete = ({
                     onValueChange={isLoading ? undefined : setInputValue}
                     onInput={(e) =>
                         onInputChange(
-                            (e.target as HTMLInputElement).value || ""
+                            (e.target as HTMLInputElement).value || "",
                         )
                     }
                     onBlur={handleBlur}
@@ -127,6 +129,7 @@ export const AutoComplete = ({
                     disabled={disabled}
                     className={cn("text-base", {
                         "border-none": isMobile,
+                        "border-red-500": !!errorMessage,
                     })}
                     isLoading={isLoading}
                 />
@@ -135,7 +138,7 @@ export const AutoComplete = ({
                 <div
                     className={cn(
                         "animate-in fade-in-0 zoom-in-95 absolute top-0 z-10 w-full rounded-xl bg-white outline-none",
-                        isOpen ? "block" : "hidden"
+                        isOpen ? "block" : "hidden",
                     )}
                 >
                     <CommandList className="rounded-lg ring-1 ring-slate-200">
@@ -164,7 +167,7 @@ export const AutoComplete = ({
                                             }
                                             className={cn(
                                                 "flex w-full items-center overflow-hidden text-ellipsis",
-                                                !isSelected ? "pl-4" : null
+                                                !isSelected ? "pl-4" : null,
                                             )}
                                         >
                                             {/* {isSelected ? (

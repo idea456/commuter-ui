@@ -16,12 +16,11 @@ import {
 } from "../ui/tooltip";
 import { useEffect, useMemo, useRef } from "react";
 import polyline from "@mapbox/polyline";
-import mapboxgl from "mapbox-gl";
+import mapboxgl, { MapEvent } from "mapbox-gl";
 import { useRootStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { Summary } from "./Summary";
 import { MapPin } from "lucide-react";
-import useNearestProperties from "@/hooks/useNearestProperties";
 import useDirections from "@/hooks/useDirections";
 import { StopSummary } from "./StopSummary";
 import { StopPin } from "./StopPin";
@@ -29,17 +28,16 @@ import { DirectionsGeometry } from "./DirectionsGeometry";
 import {
     bbox,
     center,
+    featureCollection,
     lineString,
-    multiPoint,
     point,
     points,
 } from "@turf/turf";
-import { Position } from "geojson";
-import {
-    clusterLayer,
-    clusterCountLayer,
-    unclusteredPointLayer,
-} from "./PropertiesCluster";
+import { Feature, GeoJsonProperties, Point, Position } from "geojson";
+import { clusterLayer } from "./layers/PropertiesCluster";
+import useSupercluster from "use-supercluster";
+import { useIsochrone } from "@/hooks/useIsochrone";
+import { getRouteColor } from "@/utils/colors";
 
 const OriginPin = () => {
     return <MapPin fill="red" width={40} height={40} strokeWidth={1.5} />;
@@ -61,7 +59,7 @@ const PropertyPin = ({
     if (isSelected) {
         return (
             <div
-                className="bg-yellow-400 p-2 rounded-3xl font-semibold border-black border-2 text-ellipsis overflow-hidden"
+                className="bg-yellow-400 p-2 rounded-full font-semibold border-black border-2 text-ellipsis overflow-hidden"
                 onClick={onClick}
             >
                 {property.name}
@@ -73,12 +71,12 @@ const PropertyPin = ({
     return (
         <div
             className={cn(
-                " p-2 hover:bg-yellow-400 rounded-3xl font-semibold border-black border-2 hover:opacity-100",
+                " p-2 hover:bg-yellow-400 rounded-full font-semibold border-black border-2 hover:opacity-100",
                 {
                     "bg-lime-500": customScore <= 20,
                     "bg-orange-400": customScore > 20,
                     "bg-red-500": customScore >= 30,
-                }
+                },
             )}
             onClick={onClick}
         ></div>
@@ -92,23 +90,32 @@ type TransitableStop = {
 
 const CommuterMap = () => {
     const [selectedStop, setSelectedStop] = useState<TransitableStop | null>(
-        null
+        null,
     );
     const mapRef = useRef<MapRef | null>(null);
 
     const selectedProperty = useRootStore((state) => state.selectedProperty);
     const setSelectedProperty = useRootStore(
-        (state) => state.setSelectedProperty
+        (state) => state.setSelectedProperty,
     );
     const origin = useRootStore((state) => state.origin);
     const destination = useRootStore((state) => state.destination);
+    const properties = useRootStore((state) => state.properties);
+    const walkDistance = useRootStore((state) => state.walkDistance);
     const setDestination = useRootStore((state) => state.setDestination);
 
-    const { properties } = useNearestProperties(origin);
     const { directions, isLoading: isDirectionsLoading } = useDirections(
         origin,
-        destination
+        destination,
     );
+    const { data: isochrone } = useIsochrone({
+        origin,
+        walkDistance,
+    });
+    const { data: stopIsochrone } = useIsochrone({
+        origin: selectedStop?.stop?.coordinates || null,
+        walkDistance: 500,
+    });
 
     const onClickStopPin = (transitableStop: TransitableStop) => {
         setSelectedProperty(null);
@@ -151,13 +158,13 @@ const CommuterMap = () => {
         number | null
     >(null);
     const [selectedDirection, setSelectedDirection] = useState<number | null>(
-        null
+        null,
     );
 
     useEffect(() => {
         if (directions?.length && selectedDirection && mapRef?.current) {
             const geojson = polyline.toGeoJSON(
-                directions[0]?.legs[selectedDirection].legGeometry?.points
+                directions[0]?.legs[selectedDirection].legGeometry?.points,
             );
 
             const boundingBox = bbox(geojson);
@@ -205,14 +212,45 @@ const CommuterMap = () => {
     const propertiesFeatureCollection = useMemo(() => {
         if (!properties?.length) return points([]);
 
-        const positions: Position[] = [];
+        const propertyPoints: Feature<Point, GeoJsonProperties>[] = [];
         properties.forEach((property) => {
             const { latitude, longitude } = property.property.coordinates;
-            positions.push([longitude, latitude]);
+            const propertyPoint = point([longitude, latitude]);
+            propertyPoint.properties = {
+                property: property.property,
+                nearestStop: property.nearestStop,
+                score: property.score,
+            };
+            propertyPoints.push(propertyPoint);
         });
 
-        return points(positions);
+        const propertiesFeatures = featureCollection(propertyPoints);
+        return propertiesFeatures;
     }, [properties]);
+
+    const mapBounds = useMemo(() => {
+        if (!mapRef?.current) return null;
+
+        return mapRef.current.getMap().getBounds()?.toArray().flat();
+    }, [mapRef?.current]);
+
+    const [viewport, setViewport] = useState({
+        latitude: 52.6376,
+        longitude: -1.135171,
+        width: "100vw",
+        height: "100vh",
+        zoom: 12,
+    });
+
+    const { clusters } = useSupercluster({
+        points: propertiesFeatureCollection.features,
+        bounds: mapBounds,
+        zoom: viewport.zoom,
+        options: {
+            radius: 50,
+            maxZoom: 15,
+        },
+    });
 
     useEffect(() => {
         if (
@@ -232,7 +270,9 @@ const CommuterMap = () => {
             const bounds = new mapboxgl.LngLatBounds(boundingBox);
 
             mapRef.current.fitBounds(bounds, {
-                zoom: 12,
+                zoom: 14,
+                bearing: 40,
+                pitch: 40,
             });
         }
     }, [properties, origin, selectedProperty, selectedStop]);
@@ -242,7 +282,7 @@ const CommuterMap = () => {
             const lines = [];
             for (let i = 0; i < directions[0].legs.length; i++) {
                 const line = polyline.toGeoJSON(
-                    directions[0].legs[i].legGeometry.points
+                    directions[0].legs[i].legGeometry.points,
                 );
                 lines.push(...line.coordinates);
             }
@@ -257,43 +297,90 @@ const CommuterMap = () => {
             const bounds = new mapboxgl.LngLatBounds(boundingBox);
 
             mapRef?.current.fitBounds(bounds, {
-                zoom: 14,
+                zoom: 15,
+                bearing: 40,
+                pitch: 40,
             });
         }
     }, [directions]);
 
-    console.log(propertiesFeatureCollection);
+    useEffect(() => {
+        if (origin && mapRef?.current) {
+            const originPoint = point([origin.longitude, origin.latitude]);
+            const boundingBox = bbox(originPoint);
+
+            const bounds = new mapboxgl.LngLatBounds(boundingBox);
+
+            mapRef?.current.fitBounds(bounds, {
+                zoom: 15,
+                bearing: 40,
+                pitch: 40,
+            });
+        }
+    }, [origin]);
 
     const propertiesMarkers = useMemo(
         () =>
-            properties?.map((propertyResult) => (
-                <Marker
-                    key={propertyResult.property.id}
-                    offset={[0, -25]}
-                    latitude={propertyResult.property.coordinates.latitude}
-                    longitude={propertyResult.property.coordinates.longitude}
-                >
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <PropertyPin
-                                score={propertyResult.score}
-                                property={propertyResult.property}
-                                isSelected={
-                                    propertyResult.property.id ===
-                                    selectedProperty?.property.id
-                                }
-                                onClick={() =>
-                                    onClickPropertyPin(propertyResult)
-                                }
-                            />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            {propertyResult.property.name}
-                        </TooltipContent>
-                    </Tooltip>
-                </Marker>
-            )),
-        [properties]
+            clusters?.map((cluster) => {
+                if (cluster?.properties?.cluster) {
+                    const { geometry, properties } = cluster;
+                    return (
+                        <Marker
+                            key={cluster.id}
+                            latitude={geometry.coordinates[1]}
+                            longitude={geometry.coordinates[0]}
+                        >
+                            <div
+                                className={cn(
+                                    "bg-opacity-30 rounded-full z-99 text-black flex items-center justify-center font-bold border border-black border-2 text-opacity-100 cursor-pointer",
+                                    {
+                                        "w-[40px] h-[40px] bg-sky-400 border-sky-700":
+                                            properties.point_count <= 5,
+                                        "w-[50px] h-[50px] bg-orange-400 border-orange-700":
+                                            properties.point_count >= 5,
+                                        "w-[60px] h-[60px] bg-red-400 border-red-700":
+                                            properties.point_count >= 10,
+                                    },
+                                )}
+                            >
+                                {cluster?.properties?.point_count_abbreviated}
+                            </div>
+                        </Marker>
+                    );
+                }
+
+                const { properties } = cluster;
+                const propertyResult = properties.property;
+                const score = properties.score;
+
+                return (
+                    <Marker
+                        key={propertyResult.id}
+                        latitude={propertyResult.coordinates.latitude}
+                        longitude={propertyResult.coordinates.longitude}
+                    >
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <PropertyPin
+                                    score={score}
+                                    property={propertyResult}
+                                    isSelected={
+                                        propertyResult.id ===
+                                        selectedProperty?.property.id
+                                    }
+                                    onClick={() =>
+                                        onClickPropertyPin(properties)
+                                    }
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {propertyResult.name}
+                            </TooltipContent>
+                        </Tooltip>
+                    </Marker>
+                );
+            }),
+        [properties, clusters],
     );
 
     const stopsMarkers = useMemo(
@@ -313,7 +400,7 @@ const CommuterMap = () => {
                     />
                 );
             }),
-        [transitableStops]
+        [transitableStops],
     );
 
     return (
@@ -335,31 +422,87 @@ const CommuterMap = () => {
             <TooltipProvider>
                 <MapboxMap
                     ref={mapRef}
+                    onZoom={(newViewport) => {
+                        setViewport({
+                            ...newViewport.viewState,
+                            width: "100vw",
+                            height: "100vh",
+                        });
+                    }}
                     reuseMaps
                     initialViewState={{
-                        longitude: 101.69189910816957,
-                        latitude: 3.150366192226979,
-                        zoom: 12,
-                        bearing: 40,
+                        longitude: 101.7133662,
+                        latitude: 3.1592469,
+                        zoom: 15.5,
+                        bearing: 30,
                         pitch: 40,
                     }}
                     style={{
                         width: "100%",
                         height: "100%",
                     }}
-                    mapStyle="mapbox://styles/mapbox/light-v11"
+                    mapStyle="mapbox://styles/mapbox/streets-v12"
                     minZoom={12}
                     maxZoom={17}
-                    interactiveLayerIds={[clusterLayer.id]}
+                    interactiveLayerIds={[clusterLayer.id as string]}
                 >
                     <NavigationControl position="bottom-left" />
+                    <Source name="iso" id="iso" type="geojson" data={isochrone}>
+                        <Layer
+                            type="fill"
+                            source="iso"
+                            paint={{
+                                "fill-color": "#fca5a5",
+                                "fill-opacity": 0.2,
+                                "fill-outline-color": "#fca5a5",
+                            }}
+                        />
+                        <Layer
+                            type="line"
+                            source="iso"
+                            paint={{
+                                "line-width": 3,
+                                "line-color": "#b91c1c",
+                            }}
+                        />
+                    </Source>
+                    <Source
+                        name="stop_iso"
+                        id="stop_iso"
+                        type="geojson"
+                        data={stopIsochrone}
+                    >
+                        <Layer
+                            type="fill"
+                            source="stop_iso"
+                            paint={{
+                                "fill-color": getRouteColor(
+                                    selectedStop?.stop?.stop_id[0] || "",
+                                ),
+                                "fill-opacity": 0.2,
+                                "fill-outline-color": getRouteColor(
+                                    selectedStop?.stop?.stop_id[0] || "",
+                                ),
+                            }}
+                        />
+                        <Layer
+                            type="line"
+                            source="stop_iso"
+                            paint={{
+                                "line-width": 3,
+                                "line-color": getRouteColor(
+                                    selectedStop?.stop?.stop_id[0] || "",
+                                ),
+                            }}
+                        />
+                    </Source>
                     <Layer
                         id="3d-buildings"
                         type="fill-extrusion"
                         source="composite"
                         source-layer="building"
                         filter={["==", "extrude", "true"]}
-                        minzoom={15}
+                        minzoom={14}
                         paint={{
                             "fill-extrusion-color": "#aaa",
                             "fill-extrusion-height": {
@@ -384,20 +527,6 @@ const CommuterMap = () => {
                     )}
                     {stopsMarkers}
                     {propertiesMarkers}
-                    {/* {properties?.length && (
-                        <Source
-                            type="geojson"
-                            id="properties"
-                            cluster
-                            clusterMaxZoom={14}
-                            clusterRadius={70}
-                            data={propertiesFeatureCollection}
-                        >
-                            <Layer {...clusterLayer} />
-                            <Layer {...clusterCountLayer} />
-                            <Layer {...unclusteredPointLayer} />
-                        </Source>
-                    )} */}
                     {directions?.length && (
                         <DirectionsGeometry
                             direction={directions[0]}

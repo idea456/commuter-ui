@@ -3,7 +3,7 @@ import { api } from "@/utils/api";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-type TransitablePropertyResponse = {
+type WalkablePropertyResponse = {
     property: Property;
     score: number;
     walk_distance_nearest_stop: number;
@@ -11,26 +11,22 @@ type TransitablePropertyResponse = {
     nearest_stop: Stop;
 };
 
-type GetTransitablePropertiesResponse = TransitablePropertyResponse[];
+type GetWalkablePropertyResponse = WalkablePropertyResponse[];
 
-export type NearestPropertiesOption = {
-    origin: Coordinate;
-    walkDistance: number;
-    minTransfers: number;
-    maxTransfers: number;
+type WalkablePropertyOption = {
+    origin?: Coordinate | null;
+    walkDistance?: number | null;
     mode?: "walking" | "transit";
 };
 
-const fetchNearestProperties = async (options: NearestPropertiesOption) => {
-    const { origin, walkDistance, minTransfers, maxTransfers } = options;
-    console.log(options);
-
+const fetchWalkableProperties = async (options: WalkablePropertyOption) => {
+    const { origin, walkDistance } = options;
+    if (!origin) return [];
     try {
         const results = await api.get(
-            `/properties/nearest/transit?latitude=${origin.latitude}&longitude=${origin.longitude}&walk_distance=${walkDistance}&min_transfer=${minTransfers}&max_transfer=${maxTransfers}`,
+            `/properties/nearest/walkable?latitude=${origin?.latitude}&longitude=${origin?.longitude}&walk_distance=${walkDistance}`,
         );
 
-        console.log(results);
         return results.data;
     } catch (err) {
         if (err instanceof Error) {
@@ -39,25 +35,15 @@ const fetchNearestProperties = async (options: NearestPropertiesOption) => {
     }
 };
 
-const useNearestProperties = (
+const useWalkableProperties = (
+    options: WalkablePropertyOption,
     isSubmitting: boolean,
-    options?: NearestPropertiesOption,
 ) => {
-    const { data, ...rest } = useQuery<GetTransitablePropertiesResponse, Error>(
-        {
-            queryKey: [
-                "properties",
-                "nearest",
-                "transit",
-                options?.origin?.latitude,
-                options?.origin?.longitude,
-            ],
-            queryFn: () => {
-                if (options) return fetchNearestProperties(options);
-            },
-            enabled: isSubmitting && options?.mode === "transit",
-        },
-    );
+    const { data, ...rest } = useQuery<GetWalkablePropertyResponse, Error>({
+        queryKey: ["properties", "nearest", "walkable", options],
+        queryFn: () => fetchWalkableProperties(options),
+        enabled: isSubmitting,
+    });
 
     const properties: TransitableProperty[] = useMemo(() => {
         if (!data?.length) return [];
@@ -81,4 +67,4 @@ const useNearestProperties = (
     };
 };
 
-export default useNearestProperties;
+export default useWalkableProperties;
