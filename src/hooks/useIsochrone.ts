@@ -16,7 +16,7 @@ const fetchIsochrone = async (options: GetIsochroneOptions) => {
         `/isochrone/v1/mapbox/walking/${origin.longitude},${
             origin.latitude
         }?contours_meters=${walkDistance}&polygons=true&access_token=${
-            import.meta.env.MAPBOX_ACCESS_TOKEN
+            process.env.MapboxAccessToken
         }`,
     );
 
