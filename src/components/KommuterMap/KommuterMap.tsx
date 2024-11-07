@@ -16,7 +16,7 @@ import {
 } from "../ui/tooltip";
 import { useEffect, useMemo, useRef } from "react";
 import polyline from "@mapbox/polyline";
-import mapboxgl, { MapEvent } from "mapbox-gl";
+import mapboxgl from "mapbox-gl";
 import { useRootStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { Summary } from "./Summary";
@@ -25,14 +25,7 @@ import useDirections from "@/hooks/useDirections";
 import { StopSummary } from "./StopSummary";
 import { StopPin } from "./StopPin";
 import { DirectionsGeometry } from "./DirectionsGeometry";
-import {
-    bbox,
-    center,
-    featureCollection,
-    lineString,
-    point,
-    points,
-} from "@turf/turf";
+import { bbox, featureCollection, lineString, point, points } from "@turf/turf";
 import { Feature, GeoJsonProperties, Point, Position } from "geojson";
 import { clusterLayer } from "./layers/PropertiesCluster";
 import useSupercluster from "use-supercluster";
@@ -319,10 +312,10 @@ const CommuterMap = () => {
                 zoom: 15,
                 bearing: 40,
                 pitch: 40,
-                offset: [0, -200],
+                ...(isMobile && { offset: [0, -200] }),
             });
         }
-    }, [origin]);
+    }, [origin, isMobile]);
 
     const propertiesMarkers = useMemo(
         () =>
