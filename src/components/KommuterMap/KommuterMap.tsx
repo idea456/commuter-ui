@@ -16,7 +16,7 @@ import {
 } from "../ui/tooltip";
 import { useEffect, useMemo, useRef } from "react";
 import polyline from "@mapbox/polyline";
-import mapboxgl, { MapEvent } from "mapbox-gl";
+import mapboxgl from "mapbox-gl";
 import { useRootStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { Summary } from "./Summary";
@@ -25,19 +25,13 @@ import useDirections from "@/hooks/useDirections";
 import { StopSummary } from "./StopSummary";
 import { StopPin } from "./StopPin";
 import { DirectionsGeometry } from "./DirectionsGeometry";
-import {
-    bbox,
-    center,
-    featureCollection,
-    lineString,
-    point,
-    points,
-} from "@turf/turf";
+import { bbox, featureCollection, lineString, point, points } from "@turf/turf";
 import { Feature, GeoJsonProperties, Point, Position } from "geojson";
 import { clusterLayer } from "./layers/PropertiesCluster";
 import useSupercluster from "use-supercluster";
 import { useIsochrone } from "@/hooks/useIsochrone";
 import { getRouteColor } from "@/utils/colors";
+import { useDevice } from "@/hooks/useDevice";
 
 const OriginPin = () => {
     return <MapPin fill="red" width={40} height={40} strokeWidth={1.5} />;
@@ -92,6 +86,7 @@ const CommuterMap = () => {
     const [selectedStop, setSelectedStop] = useState<TransitableStop | null>(
         null,
     );
+    const { isDesktop, isMobile } = useDevice();
     const mapRef = useRef<MapRef | null>(null);
 
     const selectedProperty = useRootStore((state) => state.selectedProperty);
@@ -305,6 +300,7 @@ const CommuterMap = () => {
         }
     }, [directions]);
 
+    // When user selects an origin from the autocomplete
     useEffect(() => {
         if (origin && mapRef?.current) {
             const originPoint = point([origin.longitude, origin.latitude]);
@@ -316,9 +312,10 @@ const CommuterMap = () => {
                 zoom: 15,
                 bearing: 40,
                 pitch: 40,
+                ...(isMobile && { offset: [0, -200] }),
             });
         }
-    }, [origin]);
+    }, [origin, isMobile]);
 
     const propertiesMarkers = useMemo(
         () =>
@@ -449,7 +446,7 @@ const CommuterMap = () => {
                     maxZoom={17}
                     interactiveLayerIds={[clusterLayer.id as string]}
                 >
-                    <NavigationControl position="bottom-left" />
+                    {isDesktop && <NavigationControl position="bottom-left" />}
                     <Source name="iso" id="iso" type="geojson" data={isochrone}>
                         <Layer
                             type="fill"
@@ -469,36 +466,38 @@ const CommuterMap = () => {
                             }}
                         />
                     </Source>
-                    <Source
-                        name="stop_iso"
-                        id="stop_iso"
-                        type="geojson"
-                        data={stopIsochrone}
-                    >
-                        <Layer
-                            type="fill"
-                            source="stop_iso"
-                            paint={{
-                                "fill-color": getRouteColor(
-                                    selectedStop?.stop?.stop_id[0] || "",
-                                ),
-                                "fill-opacity": 0.2,
-                                "fill-outline-color": getRouteColor(
-                                    selectedStop?.stop?.stop_id[0] || "",
-                                ),
-                            }}
-                        />
-                        <Layer
-                            type="line"
-                            source="stop_iso"
-                            paint={{
-                                "line-width": 3,
-                                "line-color": getRouteColor(
-                                    selectedStop?.stop?.stop_id[0] || "",
-                                ),
-                            }}
-                        />
-                    </Source>
+                    {mode === "transit" && (
+                        <Source
+                            name="stop_iso"
+                            id="stop_iso"
+                            type="geojson"
+                            data={stopIsochrone}
+                        >
+                            <Layer
+                                type="fill"
+                                source="stop_iso"
+                                paint={{
+                                    "fill-color": getRouteColor(
+                                        selectedStop?.stop?.stop_id[0] || "",
+                                    ),
+                                    "fill-opacity": 0.2,
+                                    "fill-outline-color": getRouteColor(
+                                        selectedStop?.stop?.stop_id[0] || "",
+                                    ),
+                                }}
+                            />
+                            <Layer
+                                type="line"
+                                source="stop_iso"
+                                paint={{
+                                    "line-width": 3,
+                                    "line-color": getRouteColor(
+                                        selectedStop?.stop?.stop_id[0] || "",
+                                    ),
+                                }}
+                            />
+                        </Source>
+                    )}
                     <Layer
                         id="3d-buildings"
                         type="fill-extrusion"

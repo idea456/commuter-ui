@@ -107,13 +107,23 @@ export const StopSummary = ({
                 "min-w-full max-h-[45vh] bottom-0 left-0 rounded-lg": isMobile,
             })}
         >
-            <CardHeader className="relative flex flex-row justify-between items-start">
-                <div>
-                    <CardTitle className="text-lg">{stop.name}</CardTitle>
+            <CardHeader className="relative">
+                <div className="flex flex-row justify-between items-start">
+                    <CardTitle className="text-lg">
+                        {stop.name} station
+                    </CardTitle>
+                    <Badge variant="outline" className="pt-1">
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Rapid_KL_Logo.svg/320px-Rapid_KL_Logo.svg.png"
+                            className="w-[60px] h-fit"
+                        />
+                    </Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex gap-3 flex-col">
-                <Label className="text-md">Nearest properties</Label>
+                <Label className="text-lg">
+                    {propertiesNearStop?.length} properties near this station
+                </Label>
                 <div
                     className={cn("w-full overflow-scroll flex flex-col", {
                         "max-h-[67vh]": isDesktop,
