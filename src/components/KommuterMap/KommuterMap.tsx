@@ -448,6 +448,7 @@ const CommuterMap = () => {
                         height: "100%",
                     }}
                     mapStyle="mapbox://styles/mapbox/streets-v12"
+                    mapboxAccessToken={process.env.MapboxAccessToken}
                     minZoom={12}
                     maxZoom={17}
                     interactiveLayerIds={[clusterLayer.id as string]}
