@@ -128,7 +128,6 @@ export const AutoComplete = ({
                     placeholder={placeholder}
                     disabled={disabled}
                     className={cn("text-base", {
-                        "border-none": isMobile,
                         "border-red-500": !!errorMessage,
                     })}
                     isLoading={isLoading}
